@@ -20,6 +20,15 @@ import java.util.UUID;
 public class User {
 	private boolean isAdmin;
 	private String  password;
+	private String  salt;
 	private String  username;
 	private UUID    id;
+
+
+	public User(boolean isAdmin, String password, String username, UUID id) {
+		this.isAdmin  = isAdmin;
+		this.password = password;
+		this.username = username;
+		this.id       = id;
+	}
 }
