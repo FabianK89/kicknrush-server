@@ -23,6 +23,7 @@ public class User {
 	private String  salt;
 	private String  username;
 	private UUID    id;
+	private UUID    sessionID;
 
 
 	public User(boolean isAdmin, String password, String username, UUID id) {
