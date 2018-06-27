@@ -35,15 +35,8 @@ public class DatabaseHandler {
 		                                            (rs, rowNum) -> rs.getString("TABLE_NAME")));
 
 		if (!tables.contains(DBConstants.TBL_NAME_USER)) {
-			final String password;
-			final String salt;
-
 			createUserTable();
-
-			salt     = PasswordUtils.getSalt(255);
-			password = PasswordUtils.generateSecurePassword("admin123", salt);
-
-			addNewUser("Admin", password, salt, true);
+			addNewUser("Admin", "admin123", null, true);
 		}
 
 		if (!tables.contains(DBConstants.TBL_NAME_SESSION))
