@@ -5,6 +5,8 @@ import de.fmk.kicknrush.db.DatabaseHandler;
 import de.fmk.kicknrush.models.Session;
 import de.fmk.kicknrush.models.User;
 import de.fmk.kicknrush.security.PasswordUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,8 @@ import java.util.List;
 @RestController
 @RequestMapping(path="/api/user")
 public class UserController {
+	private static final Logger LOGGER = LoggerFactory.getLogger(UserController.class);
+
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
@@ -106,6 +110,9 @@ public class UserController {
 		username = body.getFirst("username");
 		password = body.getFirst("password");
 		salt     = body.getFirst("salt");
+
+		if (!dbHandler.updateSession(session.getSessionID()))
+			LOGGER.warn("Could not update the session for the user with id '{}'.", session.getUserID());
 
 		if (dbHandler.updateUser(session.getUserID(), username, password, salt))
 			return new ResponseEntity<>(true, HttpStatus.OK);

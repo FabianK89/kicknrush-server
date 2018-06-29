@@ -246,6 +246,27 @@ public class DatabaseHandler {
 	}
 
 
+	public boolean updateSession(final UUID sessionID) {
+		final int      updatedRows;
+		final Object[] values;
+		final String[] columns;
+
+		if (sessionID == null)
+			return false;
+
+		columns     = new String[] { DBConstants.COL_NAME_LAST_ACTION };
+		values      = new Object[] { TimeUtils.createTimestamp(LocalDateTime.now()), sessionID };
+		updatedRows = updateForID(DBConstants.TBL_NAME_SESSION, columns, values);
+
+		if (updatedRows == 1) {
+			LOGGER.info("The session with id '{}' was updated.", sessionID);
+			return true;
+		}
+
+		return false;
+	}
+
+
 	private int updateForID(final String table, final String[] columns, final Object[] values) {
 		final StringBuilder setBuilder;
 		final StringBuilder queryBuilder;
