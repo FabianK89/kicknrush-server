@@ -71,7 +71,7 @@ public class UserController {
 		if (dbHandler.closeSession(userID))
 			return new ResponseEntity<>("Successfully logged out.", HttpStatus.OK);
 
-		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 
 
