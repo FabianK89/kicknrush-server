@@ -32,10 +32,10 @@ public class UserController {
 
 	@RequestMapping(path="/login")
 	public ResponseEntity<User> login(@RequestParam String username, @RequestParam String password) {
-		final boolean         correctPassword;
 		final DatabaseHandler dbHandler;
-		final String          secretPassword;
 		final User            user;
+
+		boolean correctPassword;
 
 		dbHandler = new DatabaseHandler(jdbcTemplate);
 		user      = dbHandler.findUser(username);
@@ -43,13 +43,10 @@ public class UserController {
 		if (user == null)
 			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
-		if (user.getSalt() == null) {
-			correctPassword = password.equals(user.getPassword());
-		}
-		else {
-			secretPassword  = PasswordUtils.generateSecurePassword(password, user.getSalt());
-			correctPassword = PasswordUtils.verifyUserPassword(password, secretPassword, user.getSalt());
-		}
+		correctPassword = password.equals(user.getPassword());
+
+		if (!correctPassword)
+			correctPassword = PasswordUtils.verifyUserPassword(password, user.getPassword(), user.getSalt());
 
 		if (correctPassword) {
 			if (dbHandler.addSession(user))
