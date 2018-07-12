@@ -45,7 +45,7 @@ public class UserController {
 
 		correctPassword = password.equals(user.getPassword());
 
-		if (!correctPassword)
+		if (!correctPassword && user.getSalt() != null)
 			correctPassword = PasswordUtils.verifyUserPassword(password, user.getPassword(), user.getSalt());
 
 		if (correctPassword) {
