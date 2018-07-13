@@ -84,6 +84,18 @@ public class UserController {
 	}
 
 
+	@RequestMapping(path="/getUsers")
+	public ResponseEntity<List<User>> getUsers() {
+		final DatabaseHandler dbHandler;
+		final List<User>      users;
+
+		dbHandler = new DatabaseHandler(jdbcTemplate);
+		users     = dbHandler.getUsers();
+
+		return new ResponseEntity<>(users, HttpStatus.OK);
+	}
+
+
 	@PostMapping("/updateUser")
 	public ResponseEntity<Boolean> updateUser(@RequestBody MultiValueMap<String, String> body) {
 		final DatabaseHandler dbHandler;

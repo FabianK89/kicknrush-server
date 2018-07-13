@@ -18,7 +18,8 @@ import java.util.UUID;
 public class DatabaseHandler {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseHandler.class);
 
-	private static final String WHERE = " WHERE ";
+	private static final String SELECT_ALL_FROM = "SELECT * FROM ";
+	private static final String WHERE           = " WHERE ";
 
 	private JdbcTemplate jdbcTemplate;
 
@@ -90,6 +91,24 @@ public class DatabaseHandler {
 	}
 
 
+	public List<User> getUsers() {
+		final StringBuilder queryBuilder;
+
+		queryBuilder = new StringBuilder();
+		queryBuilder.append(SELECT_ALL_FROM).append(DBConstants.TBL_NAME_USER);
+
+		return jdbcTemplate.query(queryBuilder.toString(), (rs, rowNum) -> {
+			final User user = new User();
+
+			user.setId((UUID) rs.getObject(DBConstants.COL_NAME_ID));
+			user.setUsername(rs.getString(DBConstants.COL_NAME_USERNAME));
+			user.setAdmin(rs.getBoolean(DBConstants.COL_NAME_IS_ADMIN));
+
+			return user;
+		});
+	}
+
+
 	public boolean addSession(final User user) {
 		final int                   createdRows;
 		final Object[]              values;
@@ -124,7 +143,7 @@ public class DatabaseHandler {
 			return null;
 
 		queryBuilder = new StringBuilder();
-		queryBuilder.append("SELECT * FROM ").append(DBConstants.TBL_NAME_SESSION)
+		queryBuilder.append(SELECT_ALL_FROM).append(DBConstants.TBL_NAME_SESSION)
 		            .append(WHERE).append(DBConstants.COL_NAME_ID).append("=?;");
 
 		sessionList = jdbcTemplate.query(queryBuilder.toString(), new Object[] { sessionID }, (rs, rowNum) -> {
@@ -294,7 +313,7 @@ public class DatabaseHandler {
 		final StringBuilder queryBuilder;
 
 		queryBuilder = new StringBuilder();
-		queryBuilder.append("SELECT * FROM ").append(DBConstants.TBL_NAME_USER)
+		queryBuilder.append(SELECT_ALL_FROM).append(DBConstants.TBL_NAME_USER)
 		            .append(WHERE).append(DBConstants.COL_NAME_USERNAME).append("=?;");
 
 		resultList = jdbcTemplate.query(queryBuilder.toString(), new Object[]{ username }, (rs, rowNum) ->
