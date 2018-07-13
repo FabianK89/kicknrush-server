@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 
 @RestController
@@ -28,6 +29,57 @@ public class UserController {
 
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
+
+
+	@PostMapping("/admin/administrateUser")
+	public ResponseEntity<Boolean> administrateUser(@RequestBody MultiValueMap<String, String> body) {
+		final DatabaseHandler dbHandler;
+		final Session         session;
+		final User            user;
+
+		dbHandler = new DatabaseHandler(jdbcTemplate);
+		session   = getSession(dbHandler, body.getFirst("session"));
+
+		if (session == null)
+			return new ResponseEntity<>(false, HttpStatus.NOT_FOUND);
+
+		user = new User();
+		user.setId(UUID.fromString(body.getFirst("user_id")));
+		user.setUsername(body.getFirst("username"));
+		user.setAdmin(Boolean.parseBoolean(body.getFirst("admin")));
+
+		if (!dbHandler.updateSession(session.getSessionID()))
+			LOGGER.warn("Could not update the session for the user with id '{}'.", session.getUserID());
+
+		if (Boolean.parseBoolean(body.getFirst("create.new"))) {
+			if (dbHandler.addNewUser(user.getUsername(), "1234", null, user.isAdmin()))
+				return new ResponseEntity<>(true, HttpStatus.OK);
+		}
+		else {
+			if (dbHandler.administrateUser(user))
+				return new ResponseEntity<>(true, HttpStatus.OK);
+		}
+
+		return new ResponseEntity<>(false, HttpStatus.NOT_FOUND);
+	}
+
+
+	@PostMapping("/admin/deleteUser")
+	public ResponseEntity<Boolean> deleteUser(@RequestBody MultiValueMap<String, String> body) {
+		final DatabaseHandler dbHandler;
+		final Session         session;
+
+		dbHandler = new DatabaseHandler(jdbcTemplate);
+		session   = getSession(dbHandler, body.getFirst("session"));
+
+		if (session == null)
+			return new ResponseEntity<>(false, HttpStatus.BAD_REQUEST);
+
+		if (dbHandler.deleteUser(body.getFirst("user_id")))
+			return new ResponseEntity<>(true, HttpStatus.OK);
+
+		return new ResponseEntity<>(false, HttpStatus.BAD_REQUEST);
+	}
 
 
 	@RequestMapping(path="/login")
@@ -72,6 +124,51 @@ public class UserController {
 	}
 
 
+	@RequestMapping(path="/test")
+	public void test(@RequestParam String id) {
+		new DatabaseHandler(jdbcTemplate).getSessionForID(id);
+	}
+
+
+	@PostMapping("/updateUser")
+	public ResponseEntity<Boolean> updateUser(@RequestBody MultiValueMap<String, String> body) {
+		final DatabaseHandler dbHandler;
+		final Session         session;
+		final String          password;
+		final String          salt;
+		final String          username;
+
+		dbHandler = new DatabaseHandler(jdbcTemplate);
+		session   = getSession(dbHandler, body.getFirst("session"));
+
+		if (session == null)
+			return new ResponseEntity<>(false, HttpStatus.NOT_FOUND);
+
+		username = body.getFirst("username");
+		password = body.getFirst("password");
+		salt     = body.getFirst("salt");
+
+		if (!dbHandler.updateSession(session.getSessionID()))
+			LOGGER.warn("Could not update the session for the user with id '{}'.", session.getUserID());
+
+		if (dbHandler.updateUser(session.getUserID(), username, password, salt))
+			return new ResponseEntity<>(true, HttpStatus.OK);
+
+		return new ResponseEntity<>(false, HttpStatus.NOT_FOUND);
+	}
+
+
+	private Session getSession(final DatabaseHandler dbHandler, final String sessionID) {
+		if (dbHandler == null)
+			throw new IllegalArgumentException("The database handler must not be null.");
+
+		if (sessionID == null || sessionID.isEmpty())
+			return null;
+
+		return dbHandler.getSessionForID(sessionID);
+	}
+
+
 	@RequestMapping(path="/getUsernames")
 	public ResponseEntity<List<String>> getUsernames() {
 		final DatabaseHandler dbHandler;
@@ -93,45 +190,5 @@ public class UserController {
 		users     = dbHandler.getUsers();
 
 		return new ResponseEntity<>(users, HttpStatus.OK);
-	}
-
-
-	@PostMapping("/updateUser")
-	public ResponseEntity<Boolean> updateUser(@RequestBody MultiValueMap<String, String> body) {
-		final DatabaseHandler dbHandler;
-		final Session         session;
-		final String          password;
-		final String          salt;
-		final String          sessionID;
-		final String          username;
-
-		sessionID = body.getFirst("session");
-
-		if (sessionID == null || sessionID.isEmpty())
-			return new ResponseEntity<>(false, HttpStatus.BAD_REQUEST);
-
-		dbHandler = new DatabaseHandler(jdbcTemplate);
-		session   = dbHandler.getSessionForID(sessionID);
-
-		if (session == null)
-			return new ResponseEntity<>(false, HttpStatus.NOT_FOUND);
-
-		username = body.getFirst("username");
-		password = body.getFirst("password");
-		salt     = body.getFirst("salt");
-
-		if (!dbHandler.updateSession(session.getSessionID()))
-			LOGGER.warn("Could not update the session for the user with id '{}'.", session.getUserID());
-
-		if (dbHandler.updateUser(session.getUserID(), username, password, salt))
-			return new ResponseEntity<>(true, HttpStatus.OK);
-
-		return new ResponseEntity<>(false, HttpStatus.NOT_FOUND);
-	}
-
-
-	@RequestMapping(path="/test")
-	public void test(@RequestParam String id) {
-		new DatabaseHandler(jdbcTemplate).getSessionForID(id);
 	}
 }

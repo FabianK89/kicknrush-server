@@ -244,6 +244,46 @@ public class DatabaseHandler {
 	}
 
 
+	public boolean deleteUser(final String userID) {
+		final int updatedRows;
+
+		if (userID == null || userID.isEmpty()) {
+			LOGGER.info("Could not delete a user: given user id is null or empty.");
+			return false;
+		}
+
+		updatedRows = deleteByID(DBConstants.TBL_NAME_USER, DBConstants.COL_NAME_ID, UUID.fromString(userID));
+
+		if (updatedRows == 1) {
+			LOGGER.info("The user with id '{}' was deleted.", userID);
+			return true;
+		}
+
+		return false;
+	}
+
+
+	public boolean administrateUser(final User user) {
+		final int      updatedRows;
+		final Object[] values;
+		final String[] columns;
+
+		if (user == null)
+			return false;
+
+		columns     = new String[] { DBConstants.COL_NAME_IS_ADMIN };
+		values      = new Object[] { user.isAdmin(), user.getId() };
+		updatedRows = updateForID(DBConstants.TBL_NAME_USER, columns, values);
+
+		if (updatedRows == 1) {
+			LOGGER.info("The user with id '{}' was updated.", user.getId());
+			return true;
+		}
+
+		return false;
+	}
+
+
 	public boolean updateUser(final UUID userID, final String username, final String password, final String salt) {
 		final int      updatedRows;
 		final Object[] values;
