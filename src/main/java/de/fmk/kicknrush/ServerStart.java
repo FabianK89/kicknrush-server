@@ -1,6 +1,7 @@
 package de.fmk.kicknrush;
 
 import de.fmk.kicknrush.db.DatabaseHandler;
+import de.fmk.kicknrush.dummy.Dummy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -25,5 +26,7 @@ public class ServerStart implements CommandLineRunner {
 
 		dbHandler = new DatabaseHandler(jdbcTemplate);
 		dbHandler.createInitialTables();
+
+		Dummy.createTeams(dbHandler);
 	}
 }

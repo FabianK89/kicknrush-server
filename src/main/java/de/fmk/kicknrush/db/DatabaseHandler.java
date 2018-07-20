@@ -2,6 +2,7 @@ package de.fmk.kicknrush.db;
 
 
 import de.fmk.kicknrush.models.Session;
+import de.fmk.kicknrush.models.Team;
 import de.fmk.kicknrush.models.User;
 import de.fmk.kicknrush.utils.TimeUtils;
 import org.h2.api.TimestampWithTimeZone;
@@ -18,8 +19,10 @@ import java.util.UUID;
 public class DatabaseHandler {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseHandler.class);
 
-	private static final String SELECT_ALL_FROM = "SELECT * FROM ";
-	private static final String WHERE           = " WHERE ";
+	private static final String CREATE_TABLE_IF_NOT_EXISTS = "CREATE TABLE IF NOT EXISTS ";
+	private static final String SELECT_ALL_FROM            = "SELECT * FROM ";
+	private static final String UUID_PRIMARY_KEY           = " UUID PRIMARY KEY, ";
+	private static final String WHERE                      = " WHERE ";
 
 	private JdbcTemplate jdbcTemplate;
 
@@ -42,6 +45,47 @@ public class DatabaseHandler {
 
 		if (!tables.contains(DBConstants.TBL_NAME_SESSION))
 			createSessionTable();
+
+		if (!tables.contains(DBConstants.TBL_NAME_TEAMS))
+			createTeamsTable();
+
+		if (!tables.contains(DBConstants.TBL_NAME_MATCHES))
+			createMatchesTable();
+	}
+
+
+	private void createMatchesTable() {
+		final StringBuilder queryBuilder;
+
+		LOGGER.info("Create the matches table.");
+
+		queryBuilder = new StringBuilder();
+		queryBuilder.append(CREATE_TABLE_IF_NOT_EXISTS)
+		            .append(DBConstants.TBL_NAME_MATCHES)
+		            .append("(").append(DBConstants.COL_NAME_ID).append(UUID_PRIMARY_KEY)
+		            .append(DBConstants.COL_NAME_MATCH_ID).append(" LONG UNIQUE, ")
+		            .append(DBConstants.COL_NAME_MATCH_OVER).append(" BOOLEAN, ")
+		            .append(DBConstants.COL_NAME_KICKOFF).append(" VARCHAR, ")
+		            .append(DBConstants.COL_NAME_TEAM_GUEST).append(" INTEGER NOT NULL, ")
+		            .append(DBConstants.COL_NAME_TEAM_HOME).append(" INTEGER NOT NULL");
+
+		jdbcTemplate.execute(queryBuilder.toString());
+	}
+
+
+	private void createTeamsTable() {
+		final StringBuilder queryBuilder;
+
+		LOGGER.info("Create the teams table.");
+
+		queryBuilder = new StringBuilder();
+		queryBuilder.append(CREATE_TABLE_IF_NOT_EXISTS)
+		            .append(DBConstants.TBL_NAME_TEAMS)
+		            .append("(").append(DBConstants.COL_NAME_ID).append(UUID_PRIMARY_KEY)
+		            .append(DBConstants.COL_NAME_TEAM_ID).append(" INTEGER UNIQUE, ")
+		            .append(DBConstants.COL_NAME_TEAM_NAME).append(" VARCHAR NOT NULL");
+
+		jdbcTemplate.execute(queryBuilder.toString());
 	}
 
 
@@ -51,9 +95,9 @@ public class DatabaseHandler {
 		LOGGER.info("Create the session table.");
 
 		queryBuilder = new StringBuilder();
-		queryBuilder.append("CREATE TABLE IF NOT EXISTS ")
+		queryBuilder.append(CREATE_TABLE_IF_NOT_EXISTS)
 		            .append(DBConstants.TBL_NAME_SESSION)
-		            .append("(").append(DBConstants.COL_NAME_ID).append(" UUID PRIMARY KEY, ")
+		            .append("(").append(DBConstants.COL_NAME_ID).append(UUID_PRIMARY_KEY)
 		            .append(DBConstants.COL_NAME_USER_ID).append(" UUID UNIQUE, ")
 		            .append(DBConstants.COL_NAME_LOGGED_IN).append(" TIMESTAMP WITH TIME ZONE, ")
 		            .append(DBConstants.COL_NAME_LAST_ACTION).append(" TIMESTAMP WITH TIME ZONE);");
@@ -68,9 +112,9 @@ public class DatabaseHandler {
 		LOGGER.info("Create the user table.");
 
 		queryBuilder = new StringBuilder();
-		queryBuilder.append("CREATE TABLE IF NOT EXISTS ")
+		queryBuilder.append(CREATE_TABLE_IF_NOT_EXISTS)
 		            .append(DBConstants.TBL_NAME_USER)
-		            .append("(").append(DBConstants.COL_NAME_ID).append(" UUID PRIMARY KEY, ")
+		            .append("(").append(DBConstants.COL_NAME_ID).append(UUID_PRIMARY_KEY)
 		            .append(DBConstants.COL_NAME_USERNAME).append(" VARCHAR(255) UNIQUE, ")
 		            .append(DBConstants.COL_NAME_PWD).append(" VARCHAR(255), ")
 		            .append(DBConstants.COL_NAME_SALT).append(" VARCHAR(255), ")
@@ -91,6 +135,17 @@ public class DatabaseHandler {
 	}
 
 
+	public List<Integer> getTeamIDs() {
+		final StringBuilder queryBuilder;
+
+		queryBuilder = new StringBuilder();
+		queryBuilder.append("SELECT ").append(DBConstants.COL_NAME_TEAM_ID)
+		            .append(" FROM ").append(DBConstants.TBL_NAME_TEAMS);
+
+		return jdbcTemplate.query(queryBuilder.toString(), (rs, rowNum) -> rs.getInt(DBConstants.COL_NAME_TEAM_ID));
+	}
+
+
 	public List<User> getUsers() {
 		final StringBuilder queryBuilder;
 
@@ -106,6 +161,26 @@ public class DatabaseHandler {
 
 			return user;
 		});
+	}
+
+
+	public boolean addTeam(final Team team) {
+		final int      createdRows;
+		final Object[] values;
+		final String[] columnNames;
+
+		columnNames = new String[] { DBConstants.COL_NAME_ID,
+		                             DBConstants.COL_NAME_TEAM_ID,
+		                             DBConstants.COL_NAME_TEAM_NAME };
+		values      = new Object[] { team.getId(), team.getTeamId(), team.getTeamName() };
+		createdRows = insertInto(DBConstants.TBL_NAME_TEAMS, columnNames, values);
+
+		if (createdRows == 1) {
+			LOGGER.info("The team with id '{}' and name '{}' has been created.", team.getTeamId(), team.getTeamName());
+			return true;
+		}
+
+		return false;
 	}
 
 
