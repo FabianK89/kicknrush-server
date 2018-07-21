@@ -1,9 +1,7 @@
 package de.fmk.kicknrush.db;
 
 
-import de.fmk.kicknrush.models.Session;
-import de.fmk.kicknrush.models.Team;
-import de.fmk.kicknrush.models.User;
+import de.fmk.kicknrush.models.*;
 import de.fmk.kicknrush.utils.TimeUtils;
 import org.h2.api.TimestampWithTimeZone;
 import org.slf4j.Logger;
@@ -46,11 +44,53 @@ public class DatabaseHandler {
 		if (!tables.contains(DBConstants.TBL_NAME_SESSION))
 			createSessionTable();
 
-		if (!tables.contains(DBConstants.TBL_NAME_TEAMS))
+		if (!tables.contains(DBConstants.TBL_NAME_TEAM))
 			createTeamsTable();
 
-		if (!tables.contains(DBConstants.TBL_NAME_MATCHES))
+		if (!tables.contains(DBConstants.TBL_NAME_GROUP))
+			createGroupsTable();
+
+		if (!tables.contains(DBConstants.TBL_NAME_MATCH))
 			createMatchesTable();
+
+		if (!tables.contains(DBConstants.TBL_NAME_BET))
+			createBetsTable();
+	}
+
+
+	private void createBetsTable() {
+		final StringBuilder queryBuilder;
+
+		LOGGER.info("Create the bets table.");
+
+		queryBuilder = new StringBuilder();
+		queryBuilder.append(CREATE_TABLE_IF_NOT_EXISTS)
+		            .append(DBConstants.TBL_NAME_BET)
+		            .append("(").append(DBConstants.COL_NAME_USER_ID).append(" UUID NOT NULL, ")
+		            .append(DBConstants.COL_NAME_MATCH_ID).append(" INTEGER NOT NULL, ")
+		            .append(DBConstants.COL_NAME_TEAM_HOME_GOALS).append(" INTEGER, ")
+		            .append(DBConstants.COL_NAME_TEAM_GUEST_GOALS).append(" INTEGER, ")
+		            .append(" PRIMARY KEY(").append(DBConstants.COL_NAME_USER_ID).append(",")
+		            .append(DBConstants.COL_NAME_MATCH_ID).append(")");
+
+		jdbcTemplate.execute(queryBuilder.toString());
+	}
+
+
+	private void createGroupsTable() {
+		final StringBuilder queryBuilder;
+
+		LOGGER.info("Create the groups table.");
+
+		queryBuilder = new StringBuilder();
+		queryBuilder.append(CREATE_TABLE_IF_NOT_EXISTS)
+		            .append(DBConstants.TBL_NAME_GROUP)
+		            .append("(").append(DBConstants.COL_NAME_GROUP_ID).append(" INTEGER PRIMARY KEY, ")
+		            .append(DBConstants.COL_NAME_GROUP_NAME).append(" VARCHAR(255) NOT NULL, ")
+		            .append(DBConstants.COL_NAME_GROUP_ORDER_ID).append(" INTEGER NOT NULL, ")
+		            .append(DBConstants.COL_NAME_YEAR).append(" INTEGER NOT NULL);");
+
+		jdbcTemplate.execute(queryBuilder.toString());
 	}
 
 
@@ -61,13 +101,13 @@ public class DatabaseHandler {
 
 		queryBuilder = new StringBuilder();
 		queryBuilder.append(CREATE_TABLE_IF_NOT_EXISTS)
-		            .append(DBConstants.TBL_NAME_MATCHES)
-		            .append("(").append(DBConstants.COL_NAME_ID).append(UUID_PRIMARY_KEY)
-		            .append(DBConstants.COL_NAME_MATCH_ID).append(" LONG UNIQUE, ")
+		            .append(DBConstants.TBL_NAME_MATCH)
+		            .append("(").append(DBConstants.COL_NAME_MATCH_ID).append(" INTEGER PRIMARY KEY, ")
 		            .append(DBConstants.COL_NAME_MATCH_OVER).append(" BOOLEAN, ")
-		            .append(DBConstants.COL_NAME_KICKOFF).append(" VARCHAR, ")
+		            .append(DBConstants.COL_NAME_KICKOFF).append(" TIMESTAMP WITH TIME ZONE, ")
+		            .append(DBConstants.COL_NAME_GROUP_ID).append(" INTEGER NOT NULL, ")
 		            .append(DBConstants.COL_NAME_TEAM_GUEST).append(" INTEGER NOT NULL, ")
-		            .append(DBConstants.COL_NAME_TEAM_HOME).append(" INTEGER NOT NULL");
+		            .append(DBConstants.COL_NAME_TEAM_HOME).append(" INTEGER NOT NULL);");
 
 		jdbcTemplate.execute(queryBuilder.toString());
 	}
@@ -80,10 +120,9 @@ public class DatabaseHandler {
 
 		queryBuilder = new StringBuilder();
 		queryBuilder.append(CREATE_TABLE_IF_NOT_EXISTS)
-		            .append(DBConstants.TBL_NAME_TEAMS)
-		            .append("(").append(DBConstants.COL_NAME_ID).append(UUID_PRIMARY_KEY)
-		            .append(DBConstants.COL_NAME_TEAM_ID).append(" INTEGER UNIQUE, ")
-		            .append(DBConstants.COL_NAME_TEAM_NAME).append(" VARCHAR NOT NULL");
+		            .append(DBConstants.TBL_NAME_TEAM)
+		            .append("(").append(DBConstants.COL_NAME_TEAM_ID).append(" INTEGER PRIMARY KEY, ")
+		            .append(DBConstants.COL_NAME_TEAM_NAME).append(" VARCHAR(255) NOT NULL);");
 
 		jdbcTemplate.execute(queryBuilder.toString());
 	}
@@ -140,9 +179,33 @@ public class DatabaseHandler {
 
 		queryBuilder = new StringBuilder();
 		queryBuilder.append("SELECT ").append(DBConstants.COL_NAME_TEAM_ID)
-		            .append(" FROM ").append(DBConstants.TBL_NAME_TEAMS);
+		            .append(" FROM ").append(DBConstants.TBL_NAME_TEAM);
 
 		return jdbcTemplate.query(queryBuilder.toString(), (rs, rowNum) -> rs.getInt(DBConstants.COL_NAME_TEAM_ID));
+	}
+
+
+	public List<Integer> getMatchIDs() {
+		final StringBuilder queryBuilder;
+
+		queryBuilder = new StringBuilder();
+		queryBuilder.append("SELECT ").append(DBConstants.COL_NAME_MATCH_ID)
+		            .append(" FROM ").append(DBConstants.TBL_NAME_MATCH);
+
+		return jdbcTemplate.query(queryBuilder.toString(), (rs, rowNum) -> rs.getInt(DBConstants.COL_NAME_MATCH_ID));
+	}
+
+
+	public List<Integer> getGroupIDsForYear(final int year) {
+		final StringBuilder queryBuilder;
+
+		queryBuilder = new StringBuilder();
+		queryBuilder.append("SELECT ").append(DBConstants.COL_NAME_GROUP_ID)
+		            .append(" FROM ").append(DBConstants.TBL_NAME_GROUP)
+		            .append(WHERE).append(DBConstants.COL_NAME_YEAR).append("=?;");
+
+		return jdbcTemplate.query(queryBuilder.toString(), new Object[] { year }, (rs, rowNum) ->
+				rs.getInt(DBConstants.COL_NAME_TEAM_ID));
 	}
 
 
@@ -164,19 +227,65 @@ public class DatabaseHandler {
 	}
 
 
+	public boolean addGroup(final Group group) {
+		final int      createdRows;
+		final Object[] values;
+		final String[] columnNames;
+
+		columnNames = new String[] { DBConstants.COL_NAME_GROUP_ID,
+		                             DBConstants.COL_NAME_GROUP_NAME,
+		                             DBConstants.COL_NAME_GROUP_ORDER_ID,
+		                             DBConstants.COL_NAME_YEAR };
+		values      = new Object[] { group.getGroupID(), group.getGroupName(), group.getGroupOrderID(), group.getYear() };
+		createdRows = insertInto(DBConstants.TBL_NAME_GROUP, columnNames, values);
+
+		if (createdRows == 1) {
+			LOGGER.info("The group with id '{}' and name '{}' has been created.", group.getGroupID(), group.getGroupName());
+			return true;
+		}
+
+		return false;
+	}
+
+
 	public boolean addTeam(final Team team) {
 		final int      createdRows;
 		final Object[] values;
 		final String[] columnNames;
 
-		columnNames = new String[] { DBConstants.COL_NAME_ID,
-		                             DBConstants.COL_NAME_TEAM_ID,
+		columnNames = new String[] { DBConstants.COL_NAME_TEAM_ID,
 		                             DBConstants.COL_NAME_TEAM_NAME };
-		values      = new Object[] { team.getId(), team.getTeamId(), team.getTeamName() };
-		createdRows = insertInto(DBConstants.TBL_NAME_TEAMS, columnNames, values);
+		values      = new Object[] { team.getTeamId(), team.getTeamName() };
+		createdRows = insertInto(DBConstants.TBL_NAME_TEAM, columnNames, values);
 
 		if (createdRows == 1) {
 			LOGGER.info("The team with id '{}' and name '{}' has been created.", team.getTeamId(), team.getTeamName());
+			return true;
+		}
+
+		return false;
+	}
+
+
+	public boolean addMatch(final Match match) {
+		final int      createdRows;
+		final Object[] values;
+		final String[] columnNames;
+
+		columnNames = new String[] { DBConstants.COL_NAME_MATCH_ID,
+		                             DBConstants.COL_NAME_MATCH_OVER,
+		                             DBConstants.COL_NAME_KICKOFF,
+		                             DBConstants.COL_NAME_TEAM_GUEST,
+		                             DBConstants.COL_NAME_TEAM_HOME };
+		values      = new Object[] { match.getMatchID(),
+		                             match.isMatchIsFinished(),
+		                             TimeUtils.createTimestamp(match.getMatchDateTimeUTC()),
+		                             match.getTeam2().getTeamId(),
+		                             match.getTeam1().getTeamId() };
+		createdRows = insertInto(DBConstants.TBL_NAME_MATCH, columnNames, values);
+
+		if (createdRows == 1) {
+			LOGGER.info("The match with id '{}' has been created.", match.getMatchID());
 			return true;
 		}
 
@@ -438,6 +547,22 @@ public class DatabaseHandler {
 				         rs.getString(DBConstants.COL_NAME_USERNAME),
 				         (UUID) rs.getObject(DBConstants.COL_NAME_ID),
 				         null));
+
+		return resultList.isEmpty() ? null : resultList.get(0);
+	}
+
+
+	public Team findTeam(final int teamID) {
+		final List<Team>    resultList;
+		final StringBuilder queryBuilder;
+
+		queryBuilder = new StringBuilder();
+		queryBuilder.append(SELECT_ALL_FROM).append(DBConstants.TBL_NAME_TEAM)
+		            .append(WHERE).append(DBConstants.COL_NAME_TEAM_ID).append("=?;");
+
+		resultList = jdbcTemplate.query(queryBuilder.toString(), new Object[]{ teamID }, (rs, rowNum) ->
+				new Team(rs.getInt(DBConstants.COL_NAME_TEAM_ID),
+				         rs.getString(DBConstants.COL_NAME_TEAM_NAME)));
 
 		return resultList.isEmpty() ? null : resultList.get(0);
 	}

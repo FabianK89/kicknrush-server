@@ -27,6 +27,8 @@ public class ServerStart implements CommandLineRunner {
 		dbHandler = new DatabaseHandler(jdbcTemplate);
 		dbHandler.createInitialTables();
 
+		Dummy.createGroups(dbHandler);
 		Dummy.createTeams(dbHandler);
+		Dummy.createMatches(dbHandler);
 	}
 }

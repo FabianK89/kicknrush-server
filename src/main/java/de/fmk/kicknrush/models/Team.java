@@ -22,5 +22,4 @@ import java.util.UUID;
 public class Team {
 	private int    teamId;
 	private String teamName;
-	private UUID   id;
 }

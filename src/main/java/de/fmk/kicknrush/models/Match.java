@@ -21,9 +21,9 @@ import java.util.UUID;
 @EqualsAndHashCode
 public class Match {
 	private boolean matchIsFinished;
-	private long    matchID;
+	private int     matchID;
+	private Group   group;
 	private String  matchDateTimeUTC;
 	private Team    team1;
 	private Team    team2;
-	private UUID    id;
 }
