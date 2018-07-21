@@ -71,7 +71,7 @@ public class DatabaseHandler {
 		            .append(DBConstants.COL_NAME_TEAM_HOME_GOALS).append(" INTEGER, ")
 		            .append(DBConstants.COL_NAME_TEAM_GUEST_GOALS).append(" INTEGER, ")
 		            .append(" PRIMARY KEY(").append(DBConstants.COL_NAME_USER_ID).append(",")
-		            .append(DBConstants.COL_NAME_MATCH_ID).append(")");
+		            .append(DBConstants.COL_NAME_MATCH_ID).append("))");
 
 		jdbcTemplate.execute(queryBuilder.toString());
 	}
