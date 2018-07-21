@@ -2,10 +2,9 @@ package de.fmk.kicknrush.utils;
 
 import org.h2.api.TimestampWithTimeZone;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.TimeZone;
 
 
@@ -23,6 +22,20 @@ public class TimeUtils {
 		zoneOffset    = 0;
 
 		return new TimestampWithTimeZone(zonedDateTime.toInstant().toEpochMilli(), 0, zoneOffset);
+	}
+
+
+	public static TimestampWithTimeZone createTimestamp(final String timeString) {
+		final DateTimeFormatter formatter;
+		final ZonedDateTime     zonedDateTime;
+
+		if (timeString == null || timeString.isEmpty())
+			throw new IllegalArgumentException("The time string parameter must not be null or empty.");
+
+		formatter        = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.systemDefault());
+		zonedDateTime    = ZonedDateTime.parse(timeString, formatter);
+
+		return createTimestamp(zonedDateTime.toLocalDateTime());
 	}
 
 

@@ -21,11 +21,12 @@ public class TimeUtilsTest
 	@Test
 	public void createTimestamp() {
 		final Date                  expected;
-		final LocalDateTime         time;
 		final TimestampWithTimeZone timestamp;
 
+		LocalDateTime time = null;
+
 		try {
-			TimeUtils.createTimestamp(null);
+			TimeUtils.createTimestamp(time);
 			fail("An IllegalArgumentException must occur.");
 		}
 		catch (Exception ex) {
