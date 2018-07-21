@@ -112,15 +112,15 @@ public class Dummy {
 		time     = ZonedDateTime.now();
 		matchIDs = dbHandler.getMatchIDs();
 		matches  = FXCollections.observableArrayList(
-				new Match(false, 51121, time.plusMinutes(1).format(format), dbHandler.findTeam(40), dbHandler.findTeam(123)),
-				new Match(false, 51120, time.plusMinutes(2).format(format), dbHandler.findTeam(54), dbHandler.findTeam(79)),
-				new Match(false, 51124, time.plusMinutes(3).format(format), dbHandler.findTeam(134), dbHandler.findTeam(55)),
-				new Match(false, 51125, time.plusMinutes(4).format(format), dbHandler.findTeam(112), dbHandler.findTeam(91)),
-				new Match(false, 51127, time.plusMinutes(5).format(format), dbHandler.findTeam(131), dbHandler.findTeam(9)),
-				new Match(false, 51128, time.plusMinutes(6).format(format), dbHandler.findTeam(185), dbHandler.findTeam(95)),
-				new Match(false, 51123, time.plusMinutes(7).format(format), dbHandler.findTeam(87), dbHandler.findTeam(6)),
-				new Match(false, 51126, time.plusMinutes(8).format(format), dbHandler.findTeam(81), dbHandler.findTeam(16)),
-				new Match(false, 51122, time.plusMinutes(9).format(format), dbHandler.findTeam(7), dbHandler.findTeam(1635))
+				new Match(false, 51121, dbHandler.findGroup(31775), time.plusMinutes(1).format(format), dbHandler.findTeam(40), dbHandler.findTeam(123)),
+				new Match(false, 51120, dbHandler.findGroup(31775), time.plusMinutes(2).format(format), dbHandler.findTeam(54), dbHandler.findTeam(79)),
+				new Match(false, 51124, dbHandler.findGroup(31775), time.plusMinutes(3).format(format), dbHandler.findTeam(134), dbHandler.findTeam(55)),
+				new Match(false, 51125, dbHandler.findGroup(31775), time.plusMinutes(4).format(format), dbHandler.findTeam(112), dbHandler.findTeam(91)),
+				new Match(false, 51127, dbHandler.findGroup(31775), time.plusMinutes(5).format(format), dbHandler.findTeam(131), dbHandler.findTeam(9)),
+				new Match(false, 51128, dbHandler.findGroup(31775), time.plusMinutes(6).format(format), dbHandler.findTeam(185), dbHandler.findTeam(95)),
+				new Match(false, 51123, dbHandler.findGroup(31775), time.plusMinutes(7).format(format), dbHandler.findTeam(87), dbHandler.findTeam(6)),
+				new Match(false, 51126, dbHandler.findGroup(31775), time.plusMinutes(8).format(format), dbHandler.findTeam(81), dbHandler.findTeam(16)),
+				new Match(false, 51122, dbHandler.findGroup(31775), time.plusMinutes(9).format(format), dbHandler.findTeam(7), dbHandler.findTeam(1635))
 		);
 
 		matches.forEach(match -> {

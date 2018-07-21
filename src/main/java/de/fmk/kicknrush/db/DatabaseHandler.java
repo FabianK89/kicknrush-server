@@ -275,11 +275,13 @@ public class DatabaseHandler {
 		columnNames = new String[] { DBConstants.COL_NAME_MATCH_ID,
 		                             DBConstants.COL_NAME_MATCH_OVER,
 		                             DBConstants.COL_NAME_KICKOFF,
+		                             DBConstants.COL_NAME_GROUP_ID,
 		                             DBConstants.COL_NAME_TEAM_GUEST,
 		                             DBConstants.COL_NAME_TEAM_HOME };
 		values      = new Object[] { match.getMatchID(),
 		                             match.isMatchIsFinished(),
 		                             TimeUtils.createTimestamp(match.getMatchDateTimeUTC()),
+		                             match.getGroup().getGroupID(),
 		                             match.getTeam2().getTeamId(),
 		                             match.getTeam1().getTeamId() };
 		createdRows = insertInto(DBConstants.TBL_NAME_MATCH, columnNames, values);
@@ -563,6 +565,24 @@ public class DatabaseHandler {
 		resultList = jdbcTemplate.query(queryBuilder.toString(), new Object[]{ teamID }, (rs, rowNum) ->
 				new Team(rs.getInt(DBConstants.COL_NAME_TEAM_ID),
 				         rs.getString(DBConstants.COL_NAME_TEAM_NAME)));
+
+		return resultList.isEmpty() ? null : resultList.get(0);
+	}
+
+
+	public Group findGroup(final int groupID) {
+		final List<Group>    resultList;
+		final StringBuilder  queryBuilder;
+
+		queryBuilder = new StringBuilder();
+		queryBuilder.append(SELECT_ALL_FROM).append(DBConstants.TBL_NAME_GROUP)
+		            .append(WHERE).append(DBConstants.COL_NAME_GROUP_ID).append("=?;");
+
+		resultList = jdbcTemplate.query(queryBuilder.toString(), new Object[]{ groupID }, (rs, rowNum) ->
+				new Group(rs.getInt(DBConstants.COL_NAME_GROUP_ID),
+				          rs.getInt(DBConstants.COL_NAME_GROUP_ORDER_ID),
+				          rs.getInt(DBConstants.COL_NAME_YEAR),
+				          rs.getString(DBConstants.COL_NAME_GROUP_NAME)));
 
 		return resultList.isEmpty() ? null : resultList.get(0);
 	}
