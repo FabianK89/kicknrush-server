@@ -35,12 +35,11 @@ public class DatabaseHandler {
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
-	private TeamHandler teamHandler;
+	private TeamHandler   teamHandler;
+	private UpdateHandler updateHandler;
 
 
 	public DatabaseHandler() {
-		final UpdateHandler updateHandler;
-
 		updateHandler = new UpdateHandler();
 		teamHandler   = new TeamHandler(updateHandler);
 	}
@@ -51,6 +50,9 @@ public class DatabaseHandler {
 
 		tables = new ArrayList<>(jdbcTemplate.query("SELECT * FROM INFORMATION_SCHEMA.TABLES",
 		                                            (rs, rowNum) -> rs.getString("TABLE_NAME")));
+
+		if (!tables.contains(DBConstants.TBL_NAME_UPDATES))
+			updateHandler.createTable(jdbcTemplate);
 
 		if (!tables.contains(DBConstants.TBL_NAME_USER)) {
 			createUserTable();
