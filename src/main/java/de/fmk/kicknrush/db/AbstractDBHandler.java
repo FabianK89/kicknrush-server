@@ -12,6 +12,43 @@ abstract class AbstractDBHandler<K, V> implements IDBHandler<K, V> {
 	static final String WHERE                      = " WHERE ";
 
 
+	int mergeInto(final JdbcTemplate jdbcTemplate,
+	              final String       tableName,
+	              final String[]     keyColumns,
+	              final String[]     columnNames,
+	              final Object[]     values) {
+		final StringBuilder queryBuilder;
+		final StringBuilder valuesBuilder;
+
+		queryBuilder  = new StringBuilder("MERGE INTO ");
+		valuesBuilder = new StringBuilder(") VALUES(");
+
+		queryBuilder.append(tableName).append("KEY (");
+
+		for (int i = 0; i < keyColumns.length; i++) {
+			queryBuilder.append(keyColumns[i]);
+
+			if (i + 1 < keyColumns.length)
+				queryBuilder.append(", ");
+		}
+
+		for (int i = 0; i < columnNames.length; i++) {
+			queryBuilder.append(columnNames[i]);
+			valuesBuilder.append("?");
+
+			if (i + 1 < columnNames.length) {
+				queryBuilder.append(", ");
+				valuesBuilder.append(",");
+			}
+		}
+
+		valuesBuilder.append(");");
+		queryBuilder.append(valuesBuilder.toString());
+
+		return jdbcTemplate.update(queryBuilder.toString(), values);
+	}
+
+
 	int insertInto(final JdbcTemplate jdbcTemplate,
 	               final String       table,
 	               final String[]     columns,
