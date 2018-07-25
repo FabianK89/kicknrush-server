@@ -76,20 +76,15 @@ public class TeamHandler extends AbstractDBHandler<Integer, Team> {
 	public boolean merge(JdbcTemplate jdbcTemplate, Team value) {
 		final int      createdRows;
 		final Object[] values;
-		final String[] columnNames;
 		final String[] keyColumns;
 
-		keyColumns  = new String[] { DBConstants.COL_NAME_TEAM_ID };
-		columnNames = new String[] { DBConstants.COL_NAME_TEAM_ID,
-		                             DBConstants.COL_NAME_TEAM_ICON,
-		                             DBConstants.COL_NAME_TEAM_ICON_SMALL,
-		                             DBConstants.COL_NAME_TEAM_NAME };
-		values      = new Object[] { value.getTeamId(),
-		                             value.getTeamIconUrl(),
-		                             value.getTeamIconUrlSmall() == null ? value.getTeamIconUrl()
-		                                                                 : value.getTeamIconUrlSmall(),
-		                             value.getTeamName() };
-		createdRows = mergeInto(jdbcTemplate, DBConstants.TBL_NAME_TEAM, keyColumns, columnNames, values);
+		keyColumns = new String[] { DBConstants.COL_NAME_TEAM_ID };
+		values     = new Object[] { value.getTeamId(),
+		                            value.getTeamIconUrl(),
+		                            value.getTeamIconUrlSmall() == null ? value.getTeamIconUrl()
+		                                                                : value.getTeamIconUrlSmall(),
+		                            value.getTeamName() };
+		createdRows = mergeInto(jdbcTemplate, DBConstants.TBL_NAME_TEAM, keyColumns, values);
 
 		if (createdRows == 1) {
 			LOGGER.info("The team with id '{}' and name '{}' has been updated.", value.getTeamId(), value.getTeamName());

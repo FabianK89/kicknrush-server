@@ -7,9 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 
@@ -47,17 +46,18 @@ public class UpdateHandler extends AbstractDBHandler<String, Update> {
 		final StringBuilder queryBuilder;
 
 		queryBuilder = new StringBuilder();
-		queryBuilder.append(SELECT_ALL_FROM).append(DBConstants.TBL_NAME_TEAM);
+		queryBuilder.append(SELECT_ALL_FROM).append(DBConstants.TBL_NAME_UPDATES);
 
 		return jdbcTemplate.query(queryBuilder.toString(), (rs, rowNum) -> {
+			final LocalDateTime         time;
 			final String                timeString;
 			final TimestampWithTimeZone timestamp;
 
 			timestamp  = (TimestampWithTimeZone) rs.getObject(DBConstants.COL_NAME_LAST_UPDATE);
-			timeString = TimeUtils.convertTimestamp(timestamp)
-			                      .format(DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.systemDefault()));
+			time       = TimeUtils.convertTimestamp(timestamp);
+			timeString = TimeUtils.convertLocalDateTimeUTC(time);
 
-			return new Update(rs.getString(DBConstants.COL_NAME_TABLE_NAME), timeString);
+			return new Update(timeString, rs.getString(DBConstants.COL_NAME_TABLE_NAME));
 		});
 	}
 
@@ -66,13 +66,11 @@ public class UpdateHandler extends AbstractDBHandler<String, Update> {
 	public boolean merge(JdbcTemplate jdbcTemplate, Update value) {
 		final int      mergedRows;
 		final Object[] values;
-		final String[] columnNames;
 		final String[] keyColumns;
 
-		keyColumns  = new String[] { DBConstants.COL_NAME_TABLE_NAME };
-		columnNames = new String[] { DBConstants.COL_NAME_TABLE_NAME, DBConstants.COL_NAME_LAST_UPDATE };
-		values      = new Object[] { value.getTableName(), value.getLastUpdateUTC() };
-		mergedRows  = mergeInto(jdbcTemplate, DBConstants.TBL_NAME_TEAM, keyColumns, columnNames, values);
+		keyColumns = new String[] { DBConstants.COL_NAME_TABLE_NAME };
+		values     = new Object[] { value.getTableName(), TimeUtils.createTimestamp(value.getLastUpdateUTC()) };
+		mergedRows = mergeInto(jdbcTemplate, DBConstants.TBL_NAME_UPDATES, keyColumns, values);
 
 		if (mergedRows == 1) {
 			LOGGER.info("The update of table {} has been stored in the updates table.", value.getTableName());
@@ -93,14 +91,15 @@ public class UpdateHandler extends AbstractDBHandler<String, Update> {
 		            .append(WHERE).append(DBConstants.COL_NAME_TABLE_NAME).append("=?;");
 
 		resultList = jdbcTemplate.query(queryBuilder.toString(), new Object[] { id }, (rs, rowNum) -> {
+			final LocalDateTime         time;
 			final String                timeString;
 			final TimestampWithTimeZone timestamp;
 
 			timestamp  = (TimestampWithTimeZone) rs.getObject(DBConstants.COL_NAME_LAST_UPDATE);
-			timeString = TimeUtils.convertTimestamp(timestamp)
-			                      .format(DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.systemDefault()));
+			time       = TimeUtils.convertTimestamp(timestamp);
+			timeString = TimeUtils.convertLocalDateTimeUTC(time);
 
-			return new Update(rs.getString(DBConstants.COL_NAME_TABLE_NAME), timeString);
+			return new Update(timeString, rs.getString(DBConstants.COL_NAME_TABLE_NAME));
 		});
 
 		return resultList.isEmpty() ? null : resultList.get(0);
@@ -110,8 +109,8 @@ public class UpdateHandler extends AbstractDBHandler<String, Update> {
 	public void storeUpdate(final JdbcTemplate jdbcTemplate, final String tableName) {
 		final LocalDateTime now;
 
-		now = LocalDateTime.now();
+		now = LocalDateTime.now(Clock.systemUTC());
 
-		merge(jdbcTemplate, new Update(tableName, TimeUtils.convertLocalDateTime(now)));
+		merge(jdbcTemplate, new Update(TimeUtils.convertLocalDateTimeUTC(now), tableName));
 	}
 }

@@ -15,7 +15,6 @@ abstract class AbstractDBHandler<K, V> implements IDBHandler<K, V> {
 	int mergeInto(final JdbcTemplate jdbcTemplate,
 	              final String       tableName,
 	              final String[]     keyColumns,
-	              final String[]     columnNames,
 	              final Object[]     values) {
 		final StringBuilder queryBuilder;
 		final StringBuilder valuesBuilder;
@@ -23,7 +22,7 @@ abstract class AbstractDBHandler<K, V> implements IDBHandler<K, V> {
 		queryBuilder  = new StringBuilder("MERGE INTO ");
 		valuesBuilder = new StringBuilder(") VALUES(");
 
-		queryBuilder.append(tableName).append("KEY (");
+		queryBuilder.append(tableName).append(" KEY (");
 
 		for (int i = 0; i < keyColumns.length; i++) {
 			queryBuilder.append(keyColumns[i]);
@@ -32,12 +31,10 @@ abstract class AbstractDBHandler<K, V> implements IDBHandler<K, V> {
 				queryBuilder.append(", ");
 		}
 
-		for (int i = 0; i < columnNames.length; i++) {
-			queryBuilder.append(columnNames[i]);
+		for (int i = 0; i < values.length; i++) {
 			valuesBuilder.append("?");
 
-			if (i + 1 < columnNames.length) {
-				queryBuilder.append(", ");
+			if (i + 1 < values.length) {
 				valuesBuilder.append(",");
 			}
 		}

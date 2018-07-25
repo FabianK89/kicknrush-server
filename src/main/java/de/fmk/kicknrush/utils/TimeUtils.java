@@ -53,13 +53,13 @@ public class TimeUtils {
 	}
 
 
-	public static String convertLocalDateTime(final LocalDateTime time) {
+	public static String convertLocalDateTimeUTC(final LocalDateTime time) {
 		final DateTimeFormatter formatter;
 
 		if (time == null)
 			throw new IllegalArgumentException("The time parameter must not be null.");
 
-		formatter = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.systemDefault());
+		formatter = DateTimeFormatter.ISO_INSTANT.withZone(TimeZone.getTimeZone("UTC").toZoneId());
 
 		return time.atZone(ZoneId.systemDefault()).format(formatter);
 	}

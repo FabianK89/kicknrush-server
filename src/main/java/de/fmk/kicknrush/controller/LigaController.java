@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 
+/**
+ * @author FabianK
+ */
 @RestController
 @RequestMapping(path="/api/liga")
 public class LigaController {
@@ -37,9 +40,6 @@ public class LigaController {
 			teams = oldbService.getTeams();
 			teams.forEach(team -> dbHandler.addTeam(team));
 		}
-
-		if (teams.isEmpty())
-			teams = dbHandler.getTeamsOfLastYear();
 
 		return teams;
 	}

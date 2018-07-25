@@ -5,6 +5,7 @@ import de.fmk.kicknrush.models.Group;
 import de.fmk.kicknrush.models.Match;
 import de.fmk.kicknrush.models.Session;
 import de.fmk.kicknrush.models.Team;
+import de.fmk.kicknrush.models.Update;
 import de.fmk.kicknrush.models.User;
 import de.fmk.kicknrush.utils.TimeUtils;
 import org.h2.api.TimestampWithTimeZone;
@@ -73,6 +74,11 @@ public class DatabaseHandler {
 
 		if (!tables.contains(DBConstants.TBL_NAME_BET))
 			createBetsTable();
+	}
+
+
+	public List<Update> getUpdates() {
+		return updateHandler.getValues(jdbcTemplate);
 	}
 
 
