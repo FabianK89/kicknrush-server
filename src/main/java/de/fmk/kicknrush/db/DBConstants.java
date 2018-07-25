@@ -17,18 +17,19 @@ public final class DBConstants {
 	public static final String COL_NAME_TEAM_GUEST_GOALS = "TEAM_GUEST_GOALS";
 	public static final String COL_NAME_TEAM_HOME        = "TEAM_HOME";
 	public static final String COL_NAME_TEAM_HOME_GOALS  = "TEAM_HOME_GOALS";
+	public static final String COL_NAME_TEAM_ICON        = "TEAM_ICON";
 	public static final String COL_NAME_TEAM_ID          = "TEAM_ID";
 	public static final String COL_NAME_TEAM_NAME        = "TEAM_NAME";
 	public static final String COL_NAME_USER_ID          = "USER_ID";
 	public static final String COL_NAME_USERNAME         = "USERNAME";
 	public static final String COL_NAME_YEAR             = "YEAR";
 
-	public static final String TBL_NAME_BET           = "BET";
-	public static final String TBL_NAME_GROUP         = "GROUPS";
-	public static final String TBL_NAME_MATCH         = "MATCH";
-	public static final String TBL_NAME_SESSION       = "SESSION";
-	public static final String TBL_NAME_TEAM          = "TEAM";
-	public static final String TBL_NAME_USER          = "USER";
+	public static final String TBL_NAME_BET     = "BET";
+	public static final String TBL_NAME_GROUP   = "GROUPS";
+	public static final String TBL_NAME_MATCH   = "MATCH";
+	public static final String TBL_NAME_SESSION = "SESSION";
+	public static final String TBL_NAME_TEAM    = "TEAM";
+	public static final String TBL_NAME_USER    = "USER";
 
 
 	private DBConstants() {}

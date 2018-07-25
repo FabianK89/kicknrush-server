@@ -7,13 +7,9 @@ import de.fmk.kicknrush.models.Team;
 import javafx.collections.FXCollections;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.TimeZone;
-import java.util.UUID;
 
 
 /**
@@ -75,24 +71,24 @@ public class Dummy {
 
 		teamIDs = dbHandler.getTeamIDs();
 		teams = FXCollections.observableArrayList(
-				new Team(79, "1. FC Nürnberg"),
-				new Team(81, "1. FSV Mainz 05"),
-				new Team(6, "Bayer Leverkusen"),
-				new Team(7, "Borussia Dortmund"),
-				new Team(87, "Borussia Mönchengladbach"),
-				new Team(91, "Eintracht Frankfurt"),
-				new Team(95, "FC Augsburg"),
-				new Team(40, "FC Bayern"),
-				new Team(9, "FC Schalke 04"),
-				new Team(185, "Fortuna Düsseldorf"),
-				new Team(55, "Hannover 96"),
-				new Team(54, "Hertha BSC"),
-				new Team(1635, "RB Leipzig"),
-				new Team(112, "SC Freiburg"),
-				new Team(123, "TSG 1899 Hoffenheim"),
-				new Team(16, "VfB Stuttgart"),
-				new Team(131, "VfL Wolfsburg"),
-				new Team(134, "Werder Bremen")
+				new Team(79, null, "1. FC Nürnberg"),
+				new Team(81, null, "1. FSV Mainz 05"),
+				new Team(6, null, "Bayer Leverkusen"),
+				new Team(7, null, "Borussia Dortmund"),
+				new Team(87, null, "Borussia Mönchengladbach"),
+				new Team(91, null, "Eintracht Frankfurt"),
+				new Team(95, null, "FC Augsburg"),
+				new Team(40, null, "FC Bayern"),
+				new Team(9, null, "FC Schalke 04"),
+				new Team(185, null, "Fortuna Düsseldorf"),
+				new Team(55, null, "Hannover 96"),
+				new Team(54, null, "Hertha BSC"),
+				new Team(1635, null, "RB Leipzig"),
+				new Team(112, null, "SC Freiburg"),
+				new Team(123, null, "TSG 1899 Hoffenheim"),
+				new Team(16, null, "VfB Stuttgart"),
+				new Team(131, null, "VfL Wolfsburg"),
+				new Team(134, null, "Werder Bremen")
 		);
 
 		teams.forEach(team -> {

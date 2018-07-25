@@ -6,14 +6,21 @@ import de.fmk.kicknrush.utils.TimeUtils;
 import org.h2.api.TimestampWithTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 
+/**
+ * @author FabianK
+ */
+@Component
 public class DatabaseHandler {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseHandler.class);
 
@@ -22,11 +29,14 @@ public class DatabaseHandler {
 	private static final String UUID_PRIMARY_KEY           = " UUID PRIMARY KEY, ";
 	private static final String WHERE                      = " WHERE ";
 
+	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
+	private TeamHandler teamHandler;
 
-	public DatabaseHandler(JdbcTemplate template) {
-		jdbcTemplate = template;
+
+	public DatabaseHandler() {
+		teamHandler = new TeamHandler();
 	}
 
 
@@ -45,7 +55,7 @@ public class DatabaseHandler {
 			createSessionTable();
 
 		if (!tables.contains(DBConstants.TBL_NAME_TEAM))
-			createTeamsTable();
+			teamHandler.createTable(jdbcTemplate);
 
 		if (!tables.contains(DBConstants.TBL_NAME_GROUP))
 			createGroupsTable();
@@ -113,21 +123,6 @@ public class DatabaseHandler {
 	}
 
 
-	private void createTeamsTable() {
-		final StringBuilder queryBuilder;
-
-		LOGGER.info("Create the teams table.");
-
-		queryBuilder = new StringBuilder();
-		queryBuilder.append(CREATE_TABLE_IF_NOT_EXISTS)
-		            .append(DBConstants.TBL_NAME_TEAM)
-		            .append("(").append(DBConstants.COL_NAME_TEAM_ID).append(" INTEGER PRIMARY KEY, ")
-		            .append(DBConstants.COL_NAME_TEAM_NAME).append(" VARCHAR(255) NOT NULL);");
-
-		jdbcTemplate.execute(queryBuilder.toString());
-	}
-
-
 	private void createSessionTable() {
 		final StringBuilder queryBuilder;
 
@@ -174,14 +169,18 @@ public class DatabaseHandler {
 	}
 
 
+	public List<Team> getTeams() {
+		return teamHandler.getValues(jdbcTemplate);
+	}
+
+
+	public List<Team> getTeamsOfLastYear() {
+		return teamHandler.getValuesOfYear(jdbcTemplate, LocalDate.now().minusYears(1).getYear());
+	}
+
+
 	public List<Integer> getTeamIDs() {
-		final StringBuilder queryBuilder;
-
-		queryBuilder = new StringBuilder();
-		queryBuilder.append("SELECT ").append(DBConstants.COL_NAME_TEAM_ID)
-		            .append(" FROM ").append(DBConstants.TBL_NAME_TEAM);
-
-		return jdbcTemplate.query(queryBuilder.toString(), (rs, rowNum) -> rs.getInt(DBConstants.COL_NAME_TEAM_ID));
+		return teamHandler.getIDs(jdbcTemplate);
 	}
 
 
@@ -249,21 +248,7 @@ public class DatabaseHandler {
 
 
 	public boolean addTeam(final Team team) {
-		final int      createdRows;
-		final Object[] values;
-		final String[] columnNames;
-
-		columnNames = new String[] { DBConstants.COL_NAME_TEAM_ID,
-		                             DBConstants.COL_NAME_TEAM_NAME };
-		values      = new Object[] { team.getTeamId(), team.getTeamName() };
-		createdRows = insertInto(DBConstants.TBL_NAME_TEAM, columnNames, values);
-
-		if (createdRows == 1) {
-			LOGGER.info("The team with id '{}' and name '{}' has been created.", team.getTeamId(), team.getTeamName());
-			return true;
-		}
-
-		return false;
+		return teamHandler.add(jdbcTemplate, team);
 	}
 
 
@@ -555,18 +540,7 @@ public class DatabaseHandler {
 
 
 	public Team findTeam(final int teamID) {
-		final List<Team>    resultList;
-		final StringBuilder queryBuilder;
-
-		queryBuilder = new StringBuilder();
-		queryBuilder.append(SELECT_ALL_FROM).append(DBConstants.TBL_NAME_TEAM)
-		            .append(WHERE).append(DBConstants.COL_NAME_TEAM_ID).append("=?;");
-
-		resultList = jdbcTemplate.query(queryBuilder.toString(), new Object[]{ teamID }, (rs, rowNum) ->
-				new Team(rs.getInt(DBConstants.COL_NAME_TEAM_ID),
-				         rs.getString(DBConstants.COL_NAME_TEAM_NAME)));
-
-		return resultList.isEmpty() ? null : resultList.get(0);
+		return teamHandler.findByID(jdbcTemplate, teamID);
 	}
 
 
