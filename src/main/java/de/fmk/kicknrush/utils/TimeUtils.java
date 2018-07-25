@@ -2,9 +2,11 @@ package de.fmk.kicknrush.utils;
 
 import org.h2.api.TimestampWithTimeZone;
 
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAccessor;
 import java.util.TimeZone;
 
 
@@ -48,6 +50,18 @@ public class TimeUtils {
 		instant = Instant.ofEpochMilli(timestamp.getYMD());
 
 		return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+	}
+
+
+	public static String convertLocalDateTime(final LocalDateTime time) {
+		final DateTimeFormatter formatter;
+
+		if (time == null)
+			throw new IllegalArgumentException("The time parameter must not be null.");
+
+		formatter = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.systemDefault());
+
+		return time.atZone(ZoneId.systemDefault()).format(formatter);
 	}
 
 
