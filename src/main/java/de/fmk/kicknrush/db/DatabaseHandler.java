@@ -1,7 +1,11 @@
 package de.fmk.kicknrush.db;
 
 
-import de.fmk.kicknrush.models.*;
+import de.fmk.kicknrush.models.Group;
+import de.fmk.kicknrush.models.Match;
+import de.fmk.kicknrush.models.Session;
+import de.fmk.kicknrush.models.Team;
+import de.fmk.kicknrush.models.User;
 import de.fmk.kicknrush.utils.TimeUtils;
 import org.h2.api.TimestampWithTimeZone;
 import org.slf4j.Logger;
@@ -10,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +39,10 @@ public class DatabaseHandler {
 
 
 	public DatabaseHandler() {
-		teamHandler = new TeamHandler();
+		final UpdateHandler updateHandler;
+
+		updateHandler = new UpdateHandler();
+		teamHandler   = new TeamHandler(updateHandler);
 	}
 
 
@@ -174,11 +180,6 @@ public class DatabaseHandler {
 	}
 
 
-	public List<Team> getTeamsOfLastYear() {
-		return teamHandler.getValuesOfYear(jdbcTemplate, LocalDate.now().minusYears(1).getYear());
-	}
-
-
 	public List<Integer> getTeamIDs() {
 		return teamHandler.getIDs(jdbcTemplate);
 	}
@@ -248,7 +249,7 @@ public class DatabaseHandler {
 
 
 	public boolean addTeam(final Team team) {
-		return teamHandler.add(jdbcTemplate, team);
+		return teamHandler.merge(jdbcTemplate, team);
 	}
 
 

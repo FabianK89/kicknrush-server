@@ -15,7 +15,7 @@ public interface IDBHandler<K, V> {
 
 	List<V> getValues(final JdbcTemplate jdbcTemplate);
 
-	boolean add(final JdbcTemplate jdbcTemplate, final V value);
+	boolean merge(final JdbcTemplate jdbcTemplate, final V value);
 
 	V findByID(final JdbcTemplate jdbcTemplate, K id);
 }

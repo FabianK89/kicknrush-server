@@ -25,5 +25,6 @@ import lombok.ToString;
 public class Team {
 	private int    teamId;
 	private String teamIconUrl;
+	private String teamIconUrlSmall;
 	private String teamName;
 }
