@@ -34,8 +34,8 @@ public class TimeUtils {
 		if (timeString == null || timeString.isEmpty())
 			throw new IllegalArgumentException("The time string parameter must not be null or empty.");
 
-		formatter        = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.systemDefault());
-		zonedDateTime    = ZonedDateTime.parse(timeString, formatter);
+		formatter     = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.systemDefault());
+		zonedDateTime = ZonedDateTime.parse(timeString, formatter);
 
 		return createTimestamp(zonedDateTime.toLocalDateTime());
 	}
