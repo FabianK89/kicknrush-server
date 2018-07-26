@@ -18,9 +18,9 @@ import java.util.List;
  * @author FabianK
  */
 @RestController
-@RequestMapping(path="/api/liga")
-public class LigaController {
-	private static final Logger LOGGER = LoggerFactory.getLogger(LigaController.class);
+@RequestMapping(path="/api/league")
+public class LeagueController {
+	private static final Logger LOGGER = LoggerFactory.getLogger(LeagueController.class);
 
 	@Autowired
 	private DatabaseHandler   dbHandler;
