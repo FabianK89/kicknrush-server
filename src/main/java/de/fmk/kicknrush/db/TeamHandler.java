@@ -66,8 +66,8 @@ public class TeamHandler extends AbstractDBHandler<Integer, Team> {
 
 		return jdbcTemplate.query(queryBuilder.toString(),
 		                         (rs, rowNum) -> new Team(rs.getInt(DBConstants.COL_NAME_TEAM_ID),
-		                                                  rs.getString(DBConstants.COL_NAME_TEAM_ICON_SMALL),
 		                                                  rs.getString(DBConstants.COL_NAME_TEAM_ICON),
+		                                                  rs.getString(DBConstants.COL_NAME_TEAM_ICON_SMALL),
 		                                                  rs.getString(DBConstants.COL_NAME_TEAM_NAME)));
 	}
 
@@ -107,8 +107,8 @@ public class TeamHandler extends AbstractDBHandler<Integer, Team> {
 
 		resultList = jdbcTemplate.query(queryBuilder.toString(), new Object[] { id }, (rs, rowNum) ->
 				new Team(rs.getInt(DBConstants.COL_NAME_TEAM_ID),
-				         rs.getString(DBConstants.COL_NAME_TEAM_ICON_SMALL),
 				         rs.getString(DBConstants.COL_NAME_TEAM_ICON),
+				         rs.getString(DBConstants.COL_NAME_TEAM_ICON_SMALL),
 				         rs.getString(DBConstants.COL_NAME_TEAM_NAME)));
 
 		return resultList.isEmpty() ? null : resultList.get(0);
