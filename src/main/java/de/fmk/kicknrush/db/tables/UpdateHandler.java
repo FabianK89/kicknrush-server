@@ -1,5 +1,6 @@
-package de.fmk.kicknrush.db;
+package de.fmk.kicknrush.db.tables;
 
+import de.fmk.kicknrush.db.DBConstants;
 import de.fmk.kicknrush.models.Update;
 import de.fmk.kicknrush.utils.TimeUtils;
 import org.h2.api.TimestampWithTimeZone;
@@ -103,6 +104,12 @@ public class UpdateHandler extends AbstractDBHandler<String, Update> {
 		});
 
 		return resultList.isEmpty() ? null : resultList.get(0);
+	}
+
+
+	@Override
+	public boolean deleteByID(JdbcTemplate jdbcTemplate, String id) {
+		throw new UnsupportedOperationException("Deleting a update is currently not supported.");
 	}
 
 

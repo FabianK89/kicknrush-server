@@ -1,6 +1,10 @@
 package de.fmk.kicknrush.db;
 
 
+import de.fmk.kicknrush.db.tables.SessionHandler;
+import de.fmk.kicknrush.db.tables.TeamHandler;
+import de.fmk.kicknrush.db.tables.UpdateHandler;
+import de.fmk.kicknrush.db.tables.UserHandler;
 import de.fmk.kicknrush.models.Group;
 import de.fmk.kicknrush.models.Match;
 import de.fmk.kicknrush.models.Session;
@@ -8,13 +12,13 @@ import de.fmk.kicknrush.models.Team;
 import de.fmk.kicknrush.models.Update;
 import de.fmk.kicknrush.models.User;
 import de.fmk.kicknrush.utils.TimeUtils;
-import org.h2.api.TimestampWithTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,13 +40,17 @@ public class DatabaseHandler {
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
-	private TeamHandler   teamHandler;
-	private UpdateHandler updateHandler;
+	private SessionHandler sessionHandler;
+	private TeamHandler    teamHandler;
+	private UpdateHandler  updateHandler;
+	private UserHandler    userHandler;
 
 
 	public DatabaseHandler() {
-		updateHandler = new UpdateHandler();
-		teamHandler   = new TeamHandler(updateHandler);
+		sessionHandler = new SessionHandler();
+		updateHandler  = new UpdateHandler();
+		userHandler    = new UserHandler(updateHandler);
+		teamHandler    = new TeamHandler(updateHandler);
 	}
 
 
@@ -56,12 +64,12 @@ public class DatabaseHandler {
 			updateHandler.createTable(jdbcTemplate);
 
 		if (!tables.contains(DBConstants.TBL_NAME_USER)) {
-			createUserTable();
-			addNewUser("Admin", "admin123", null, true);
+			userHandler.createTable(jdbcTemplate);
+			createUser(new User(true, null, "Admin", UUID.randomUUID()));
 		}
 
 		if (!tables.contains(DBConstants.TBL_NAME_SESSION))
-			createSessionTable();
+			sessionHandler.createTable(jdbcTemplate);
 
 		if (!tables.contains(DBConstants.TBL_NAME_TEAM))
 			teamHandler.createTable(jdbcTemplate);
@@ -74,6 +82,27 @@ public class DatabaseHandler {
 
 		if (!tables.contains(DBConstants.TBL_NAME_BET))
 			createBetsTable();
+	}
+
+
+	public boolean isAdminSession(final UUID sessionID) {
+		final Session session;
+		final User    user;
+
+		if (sessionID == null)
+			return false;
+
+		session = sessionHandler.findByID(jdbcTemplate, sessionID);
+
+		if (session == null)
+			return false;
+
+		user = userHandler.findByID(jdbcTemplate, session.getUserID());
+
+		if (user == null)
+			return false;
+
+		return user.isAdmin();
 	}
 
 
@@ -137,49 +166,8 @@ public class DatabaseHandler {
 	}
 
 
-	private void createSessionTable() {
-		final StringBuilder queryBuilder;
-
-		LOGGER.info("Create the session table.");
-
-		queryBuilder = new StringBuilder();
-		queryBuilder.append(CREATE_TABLE_IF_NOT_EXISTS)
-		            .append(DBConstants.TBL_NAME_SESSION)
-		            .append("(").append(DBConstants.COL_NAME_ID).append(UUID_PRIMARY_KEY)
-		            .append(DBConstants.COL_NAME_USER_ID).append(" UUID UNIQUE, ")
-		            .append(DBConstants.COL_NAME_LOGGED_IN).append(" TIMESTAMP WITH TIME ZONE, ")
-		            .append(DBConstants.COL_NAME_LAST_ACTION).append(" TIMESTAMP WITH TIME ZONE);");
-
-		jdbcTemplate.execute(queryBuilder.toString());
-	}
-
-
-	private void createUserTable() {
-		final StringBuilder queryBuilder;
-
-		LOGGER.info("Create the user table.");
-
-		queryBuilder = new StringBuilder();
-		queryBuilder.append(CREATE_TABLE_IF_NOT_EXISTS)
-		            .append(DBConstants.TBL_NAME_USER)
-		            .append("(").append(DBConstants.COL_NAME_ID).append(UUID_PRIMARY_KEY)
-		            .append(DBConstants.COL_NAME_USERNAME).append(" VARCHAR(255) UNIQUE, ")
-		            .append(DBConstants.COL_NAME_PWD).append(" VARCHAR(255), ")
-		            .append(DBConstants.COL_NAME_SALT).append(" VARCHAR(255), ")
-		            .append(DBConstants.COL_NAME_IS_ADMIN).append(" BOOLEAN);");
-
-		jdbcTemplate.execute(queryBuilder.toString());
-	}
-
-
 	public List<String> getUsernames() {
-		final StringBuilder queryBuilder;
-
-		queryBuilder = new StringBuilder();
-		queryBuilder.append("SELECT ").append(DBConstants.COL_NAME_USERNAME)
-		            .append(" FROM ").append(DBConstants.TBL_NAME_USER);
-
-		return jdbcTemplate.query(queryBuilder.toString(), (rs, rowNum) -> rs.getString(DBConstants.COL_NAME_USERNAME));
+		return userHandler.getUsernames(jdbcTemplate);
 	}
 
 
@@ -218,20 +206,7 @@ public class DatabaseHandler {
 
 
 	public List<User> getUsers() {
-		final StringBuilder queryBuilder;
-
-		queryBuilder = new StringBuilder();
-		queryBuilder.append(SELECT_ALL_FROM).append(DBConstants.TBL_NAME_USER);
-
-		return jdbcTemplate.query(queryBuilder.toString(), (rs, rowNum) -> {
-			final User user = new User();
-
-			user.setId((UUID) rs.getObject(DBConstants.COL_NAME_ID));
-			user.setUsername(rs.getString(DBConstants.COL_NAME_USERNAME));
-			user.setAdmin(rs.getBoolean(DBConstants.COL_NAME_IS_ADMIN));
-
-			return user;
-		});
+		return userHandler.getValues(jdbcTemplate);
 	}
 
 
@@ -289,75 +264,34 @@ public class DatabaseHandler {
 	}
 
 
-	public boolean addSession(final User user) {
-		final int                   createdRows;
-		final Object[]              values;
-		final String[]              columnNames;
-		final TimestampWithTimeZone timestamp;
-		final UUID                  sessionID;
+	public UUID createSession(final UUID userID) {
+		final LocalDateTime now;
+		final Session       session;
 
-		timestamp   = TimeUtils.createTimestamp(LocalDateTime.now());
-		sessionID   = UUID.randomUUID();
-		columnNames = new String[] { DBConstants.COL_NAME_ID,
-		                             DBConstants.COL_NAME_USER_ID,
-		                             DBConstants.COL_NAME_LOGGED_IN,
-		                             DBConstants.COL_NAME_LAST_ACTION };
-		values      = new Object[] { sessionID, user.getId(), timestamp, timestamp };
-		createdRows = insertInto(DBConstants.TBL_NAME_SESSION, columnNames, values);
+		now     = LocalDateTime.now(Clock.systemUTC());
+		session = new Session(now, now, UUID.randomUUID(), userID);
 
-		if (createdRows == 1) {
-			user.setSessionID(sessionID);
-			LOGGER.info("Session has been created for the user with id '{}'.", user.getId());
-			return true;
-		}
+		if (sessionHandler.merge(jdbcTemplate, session))
+			return session.getSessionID();
 
-		return false;
+		return null;
 	}
 
 
-	public Session getSessionForID(final String sessionID) {
-		final List<Session> sessionList;
-		final StringBuilder queryBuilder;
+	public boolean checkSession(final UUID sessionID, final UUID userID) {
+		final Session session;
 
-		if (sessionID == null || sessionID.isEmpty())
-			return null;
+		if (userID == null || sessionID == null)
+			return false;
 
-		queryBuilder = new StringBuilder();
-		queryBuilder.append(SELECT_ALL_FROM).append(DBConstants.TBL_NAME_SESSION)
-		            .append(WHERE).append(DBConstants.COL_NAME_ID).append("=?;");
+		session = sessionHandler.findByID(jdbcTemplate, sessionID);
 
-		sessionList = jdbcTemplate.query(queryBuilder.toString(), new Object[] { sessionID }, (rs, rowNum) -> {
-			final Session session = new Session();
-
-			TimestampWithTimeZone timestamp;
-
-			session.setSessionID((UUID) rs.getObject(DBConstants.COL_NAME_ID));
-			session.setUserID((UUID) rs.getObject(DBConstants.COL_NAME_USER_ID));
-
-			timestamp = (TimestampWithTimeZone) rs.getObject(DBConstants.COL_NAME_LOGGED_IN);
-			session.setLoggedInTime(TimeUtils.convertTimestamp(timestamp));
-
-			timestamp = (TimestampWithTimeZone) rs.getObject(DBConstants.COL_NAME_LAST_ACTION);
-			session.setLastActionTime(TimeUtils.convertTimestamp(timestamp));
-
-			return session;
-		});
-
-		if (sessionList == null || sessionList.isEmpty())
-			return null;
-
-		return sessionList.get(0);
+		return session != null && userID.equals(session.getUserID());
 	}
 
 
-	public boolean closeSession(final String userID) {
-		final int  deleteRows;
-		final UUID id;
-
-		id         = UUID.fromString(userID);
-		deleteRows = deleteByID(DBConstants.TBL_NAME_SESSION, DBConstants.COL_NAME_USER_ID, id);
-
-		if (deleteRows == 1) {
+	public boolean closeSession(final UUID sessionID, final String userID) {
+		if (sessionHandler.deleteByID(jdbcTemplate, sessionID)) {
 			LOGGER.info("Session of user with id '{}' has been closed.", userID);
 			return true;
 		}
@@ -366,13 +300,19 @@ public class DatabaseHandler {
 	}
 
 
-	private int deleteByID(final String table, final String idColumn, final UUID id) {
-		final StringBuilder queryBuilder;
+	public boolean updateSession(final UUID sessionID) {
+		final LocalDateTime now;
+		final Session       session;
 
-		queryBuilder = new StringBuilder();
-		queryBuilder.append("DELETE FROM ").append(table).append(WHERE).append(idColumn).append("=?;");
+		session = sessionHandler.findByID(jdbcTemplate, sessionID);
+		now     = LocalDateTime.now(Clock.systemUTC());
 
-		return jdbcTemplate.update(queryBuilder.toString(), id);
+		if (session == null)
+			return false;
+
+		session.setLastActionTime(now);
+
+		return sessionHandler.merge(jdbcTemplate, session);
 	}
 
 
@@ -402,40 +342,14 @@ public class DatabaseHandler {
 	}
 
 
-	public boolean addNewUser(final String username, final String password, final String salt, final boolean admin) {
-		final int      createdRows;
-		final Object[] values;
-		final String[] columnNames;
-
-		columnNames = new String[] { DBConstants.COL_NAME_ID,
-		                             DBConstants.COL_NAME_USERNAME,
-		                             DBConstants.COL_NAME_PWD,
-		                             DBConstants.COL_NAME_SALT,
-		                             DBConstants.COL_NAME_IS_ADMIN };
-		values      = new Object[] { UUID.randomUUID(), username, password, salt, admin };
-		createdRows = insertInto(DBConstants.TBL_NAME_USER, columnNames, values);
-
-		if (createdRows == 1) {
-			LOGGER.info("The user with name '{}' has been created.", username);
-			return true;
-		}
-
-		return false;
+	public boolean createUser(final User user) {
+		return userHandler.merge(jdbcTemplate, user);
 	}
 
 
-	public boolean deleteUser(final String userID) {
-		final int updatedRows;
-
-		if (userID == null || userID.isEmpty()) {
-			LOGGER.info("Could not delete a user: given user id is null or empty.");
-			return false;
-		}
-
-		updatedRows = deleteByID(DBConstants.TBL_NAME_USER, DBConstants.COL_NAME_ID, UUID.fromString(userID));
-
-		if (updatedRows == 1) {
-			LOGGER.info("The user with id '{}' was deleted.", userID);
+	public boolean deleteUser(final UUID userID) {
+		if (userHandler.deleteByID(jdbcTemplate, userID)) {
+			LOGGER.info("The user with id '{}' has been deleted.", userID);
 			return true;
 		}
 
@@ -464,45 +378,8 @@ public class DatabaseHandler {
 	}
 
 
-	public boolean updateUser(final UUID userID, final String username, final String password, final String salt) {
-		final int      updatedRows;
-		final Object[] values;
-		final String[] columns;
-
-		if (userID == null || username == null || password == null || salt == null)
-			return false;
-
-		columns     = new String[] { DBConstants.COL_NAME_USERNAME, DBConstants.COL_NAME_PWD, DBConstants.COL_NAME_SALT };
-		values      = new Object[] { username, password, salt, userID };
-		updatedRows = updateForID(DBConstants.TBL_NAME_USER, columns, values);
-
-		if (updatedRows == 1) {
-			LOGGER.info("The user with id '{}' was updated.", userID);
-			return true;
-		}
-
-		return false;
-	}
-
-
-	public boolean updateSession(final UUID sessionID) {
-		final int      updatedRows;
-		final Object[] values;
-		final String[] columns;
-
-		if (sessionID == null)
-			return false;
-
-		columns     = new String[] { DBConstants.COL_NAME_LAST_ACTION };
-		values      = new Object[] { TimeUtils.createTimestamp(LocalDateTime.now()), sessionID };
-		updatedRows = updateForID(DBConstants.TBL_NAME_SESSION, columns, values);
-
-		if (updatedRows == 1) {
-			LOGGER.info("The session with id '{}' was updated.", sessionID);
-			return true;
-		}
-
-		return false;
+	public boolean updateUser(final User user) {
+		return userHandler.merge(jdbcTemplate, user);
 	}
 
 
@@ -529,27 +406,29 @@ public class DatabaseHandler {
 
 
 	public User findUser(final String username) {
-		final List<User>    resultList;
-		final StringBuilder queryBuilder;
+		final User user;
 
-		queryBuilder = new StringBuilder();
-		queryBuilder.append(SELECT_ALL_FROM).append(DBConstants.TBL_NAME_USER)
-		            .append(WHERE).append(DBConstants.COL_NAME_USERNAME).append("=?;");
+		if (username == null)
+			throw new IllegalArgumentException("The username must not be null.");
 
-		resultList = jdbcTemplate.query(queryBuilder.toString(), new Object[]{ username }, (rs, rowNum) ->
-				new User(rs.getBoolean(DBConstants.COL_NAME_IS_ADMIN),
-				         rs.getString(DBConstants.COL_NAME_PWD),
-				         rs.getString(DBConstants.COL_NAME_SALT),
-				         rs.getString(DBConstants.COL_NAME_USERNAME),
-				         (UUID) rs.getObject(DBConstants.COL_NAME_ID),
-				         null));
+		user = userHandler.findByUsername(jdbcTemplate, username);
 
-		return resultList.isEmpty() ? null : resultList.get(0);
+		if (user == null)
+			LOGGER.info("Could not find the user with name '{}'.", username);
+
+		return user;
 	}
 
 
 	public Team findTeam(final int teamID) {
-		return teamHandler.findByID(jdbcTemplate, teamID);
+		final Team team;
+
+		team = teamHandler.findByID(jdbcTemplate, teamID);
+
+		if (team == null)
+			LOGGER.info("Could not find the team with id '{}'.", teamID);
+
+		return team;
 	}
 
 

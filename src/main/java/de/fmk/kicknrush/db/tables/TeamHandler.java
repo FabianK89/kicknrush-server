@@ -1,5 +1,6 @@
-package de.fmk.kicknrush.db;
+package de.fmk.kicknrush.db.tables;
 
+import de.fmk.kicknrush.db.DBConstants;
 import de.fmk.kicknrush.models.Team;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +14,6 @@ import java.util.List;
  */
 public class TeamHandler extends AbstractDBHandler<Integer, Team> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TeamHandler.class);
-
 
 	private final UpdateHandler updateHandler;
 
@@ -112,5 +112,11 @@ public class TeamHandler extends AbstractDBHandler<Integer, Team> {
 				         rs.getString(DBConstants.COL_NAME_TEAM_NAME)));
 
 		return resultList.isEmpty() ? null : resultList.get(0);
+	}
+
+
+	@Override
+	public boolean deleteByID(JdbcTemplate jdbcTemplate, Integer id) {
+		throw new UnsupportedOperationException("Deleting a team is currently not supported.");
 	}
 }

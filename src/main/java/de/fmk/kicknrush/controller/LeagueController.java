@@ -2,12 +2,16 @@ package de.fmk.kicknrush.controller;
 
 import de.fmk.kicknrush.db.DBConstants;
 import de.fmk.kicknrush.db.DatabaseHandler;
+import de.fmk.kicknrush.models.Match;
 import de.fmk.kicknrush.models.Team;
 import de.fmk.kicknrush.service.OpenLigaDBService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -42,6 +46,14 @@ public class LeagueController {
 		}
 
 		return teams;
+	}
+
+
+	@PostMapping("/getMatches")
+	public List<Match> getMatches(@RequestBody MultiValueMap<String, String> body) {
+		List<Match> matches;
+
+		return null;
 	}
 
 

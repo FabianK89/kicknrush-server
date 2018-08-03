@@ -1,6 +1,10 @@
-package de.fmk.kicknrush.db;
+package de.fmk.kicknrush.db.tables;
 
+import de.fmk.kicknrush.db.ColumnValue;
 import org.springframework.jdbc.core.JdbcTemplate;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -12,37 +16,56 @@ abstract class AbstractDBHandler<K, V> implements IDBHandler<K, V> {
 	static final String WHERE                      = " WHERE ";
 
 
-	int mergeInto(final JdbcTemplate jdbcTemplate,
-	              final String       tableName,
-	              final String[]     keyColumns,
-	              final Object[]     values) {
+	int deleteByID(final JdbcTemplate jdbcTemplate, final String table, final String idColumn, final K id) {
 		final StringBuilder queryBuilder;
+
+		queryBuilder = new StringBuilder();
+		queryBuilder.append("DELETE FROM ").append(table).append(WHERE).append(idColumn).append("=?;");
+
+		return jdbcTemplate.update(queryBuilder.toString(), id);
+	}
+
+
+	int mergeInto(final JdbcTemplate  jdbcTemplate,
+	              final String        tableName,
+	              final String[]      keyColumns,
+	              final ColumnValue[] values) {
+		final List<Object>  valueList;
+		final StringBuilder queryBuilder;
+		final StringBuilder keyBuilder;
 		final StringBuilder valuesBuilder;
 
+		valueList     = new ArrayList<>();
 		queryBuilder  = new StringBuilder("MERGE INTO ");
+		keyBuilder    = new StringBuilder(") KEY (");
 		valuesBuilder = new StringBuilder(") VALUES(");
 
-		queryBuilder.append(tableName).append(" KEY (");
+		queryBuilder.append(tableName);
+		keyBuilder.append(" KEY (");
 
 		for (int i = 0; i < keyColumns.length; i++) {
-			queryBuilder.append(keyColumns[i]);
+			keyBuilder.append(keyColumns[i]);
 
 			if (i + 1 < keyColumns.length)
-				queryBuilder.append(", ");
+				keyBuilder.append(", ");
 		}
 
 		for (int i = 0; i < values.length; i++) {
+			valueList.add(values[i].getValue());
+			queryBuilder.append(values[i].getName());
 			valuesBuilder.append("?");
 
 			if (i + 1 < values.length) {
+				queryBuilder.append(", ");
 				valuesBuilder.append(",");
 			}
 		}
 
 		valuesBuilder.append(");");
-		queryBuilder.append(valuesBuilder.toString());
+		keyBuilder.append(valuesBuilder.toString());
+		queryBuilder.append(keyBuilder.toString());
 
-		return jdbcTemplate.update(queryBuilder.toString(), values);
+		return jdbcTemplate.update(queryBuilder.toString(), valueList.toArray(new Object[0]));
 	}
 
 

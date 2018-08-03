@@ -1,4 +1,4 @@
-package de.fmk.kicknrush.db;
+package de.fmk.kicknrush.db.tables;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -18,4 +18,6 @@ public interface IDBHandler<K, V> {
 	boolean merge(final JdbcTemplate jdbcTemplate, final V value);
 
 	V findByID(final JdbcTemplate jdbcTemplate, K id);
+
+	boolean deleteByID(final JdbcTemplate jdbcTemplate, K id);
 }
