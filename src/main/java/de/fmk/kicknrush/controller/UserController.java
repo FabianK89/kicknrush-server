@@ -21,58 +21,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-
+/**
+ * Controller class for actions with the user table.
+ * @author FabianK
+ */
 @RestController
 @RequestMapping(path="/api/user")
 public class UserController {
 	private static final Logger LOGGER = LoggerFactory.getLogger(UserController.class);
 
-	private static final String SESSION = "session";
-	private static final String USER_ID = "userID";
 	private static final String INVALID_PARAMETERS        = "'{}' or '{}' is not a valid id.";
 	private static final String IS_NOT_A_VALID_SESSION_ID = "'{}' is not a valid session id.";
 
 	@Autowired
 	private DatabaseHandler dbHandler;
-
-
-	@PostMapping("/admin/administrateUser")
-	public ResponseEntity<Boolean> administrateUser(@RequestBody MultiValueMap<String, String> body) {
-		final User user;
-		final UUID sessionID;
-
-		try {
-			if (body.getFirst(SESSION) == null)
-				sessionID = null;
-			else
-				sessionID = UUID.fromString(body.getFirst(SESSION));
-		}
-		catch (IllegalArgumentException iaex) {
-			return new ResponseEntity<>(false, HttpStatus.FORBIDDEN);
-		}
-
-		if (!dbHandler.isAdminSession(sessionID))
-			return new ResponseEntity<>(false, HttpStatus.FORBIDDEN);
-
-		user = new User();
-		user.setId(UUID.fromString(body.getFirst("user_id")));
-		user.setUsername(body.getFirst("username"));
-		user.setAdmin(Boolean.parseBoolean(body.getFirst("admin")));
-
-		if (!dbHandler.updateSession(sessionID))
-			LOGGER.warn("Could not update the session.");
-
-//		if (Boolean.parseBoolean(body.getFirst("create.new"))) {
-//			if (dbHandler.createUser(user.getUsername(), "1234", null, user.isAdmin()))
-//				return new ResponseEntity<>(true, HttpStatus.OK);
-//		}
-//		else {
-//			if (dbHandler.administrateUser(user))
-//				return new ResponseEntity<>(true, HttpStatus.OK);
-//		}
-
-		return new ResponseEntity<>(false, HttpStatus.NOT_FOUND);
-	}
 
 
 	/**
@@ -208,7 +170,11 @@ public class UserController {
 		return ResponseEntity.badRequest().build();
 	}
 
-
+	/**
+	 * Update the data of an user. Can only be done by an admin or the user himself.
+	 * @param body Request body: Session id and user id must be set.
+	 * @return {@link org.springframework.http.HttpStatus#OK}, if the user has been successfully updated.
+	 */
 	@PostMapping("/updateUser")
 	public ResponseEntity<Boolean> updateUser(@RequestBody UserDTO body) {
 		final String                  sessionID;
