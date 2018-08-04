@@ -1,5 +1,6 @@
 package de.fmk.kicknrush.db.tables;
 
+import de.fmk.kicknrush.db.ColumnValue;
 import de.fmk.kicknrush.db.DBConstants;
 import de.fmk.kicknrush.models.Update;
 import de.fmk.kicknrush.utils.TimeUtils;
@@ -10,6 +11,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -64,17 +66,30 @@ public class UpdateHandler extends AbstractDBHandler<String, Update> {
 
 
 	@Override
-	public boolean merge(JdbcTemplate jdbcTemplate, Update value) {
-		final int      mergedRows;
-		final Object[] values;
-		final String[] keyColumns;
+	public boolean merge(JdbcTemplate jdbcTemplate, Update update) {
+		final int               mergedRows;
+		final List<ColumnValue> values;
+		final String[]          keyColumns;
+
+		if (update == null) {
+			LOGGER.warn("MERGE FAILED: The update parameter is null.");
+			return false;
+		}
 
 		keyColumns = new String[] { DBConstants.COL_NAME_TABLE_NAME };
-		values     = new Object[] { value.getTableName(), TimeUtils.createTimestamp(value.getLastUpdateUTC()) };
-		mergedRows = mergeInto(jdbcTemplate, DBConstants.TBL_NAME_UPDATES, keyColumns, values);
+		values     = new ArrayList<>();
+
+		values.add(new ColumnValue(DBConstants.COL_NAME_TABLE_NAME, update.getTableName()));
+		values.add(new ColumnValue(DBConstants.COL_NAME_LAST_UPDATE,
+		                           TimeUtils.createTimestamp(update.getLastUpdateUTC())));
+
+		mergedRows = mergeInto(jdbcTemplate,
+		                       DBConstants.TBL_NAME_UPDATES,
+		                       keyColumns,
+		                       values.toArray(new ColumnValue[0]));
 
 		if (mergedRows == 1) {
-			LOGGER.info("The update of table {} has been stored in the updates table.", value.getTableName());
+			LOGGER.info("The update of table {} has been stored in the updates table.", update.getTableName());
 			return true;
 		}
 

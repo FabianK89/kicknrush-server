@@ -69,12 +69,12 @@ public class UserHandler extends AbstractDBHandler<UUID, User> {
 
 
 	@Override
-	public boolean merge(JdbcTemplate jdbcTemplate, User value) {
-		final int               createdRows;
+	public boolean merge(JdbcTemplate jdbcTemplate, User user) {
+		final int               mergedRows;
 		final List<ColumnValue> values;
 		final String[]          keyColumns;
 
-		if (value == null) {
+		if (user == null) {
 			LOGGER.warn("MERGE FAILED: The user parameter is null.");
 			return false;
 		}
@@ -82,20 +82,20 @@ public class UserHandler extends AbstractDBHandler<UUID, User> {
 		keyColumns = new String[] { DBConstants.COL_NAME_ID };
 		values     = new ArrayList<>();
 
-		values.add(new ColumnValue(DBConstants.COL_NAME_ID, value.getId()));
-		values.add(new ColumnValue(DBConstants.COL_NAME_IS_ADMIN, value.isAdmin()));
+		values.add(new ColumnValue(DBConstants.COL_NAME_ID, user.getId()));
+		values.add(new ColumnValue(DBConstants.COL_NAME_IS_ADMIN, user.isAdmin()));
 
-		if (value.getUsername() != null)
-			values.add(new ColumnValue(DBConstants.COL_NAME_USERNAME, value.getUsername()));
-		if (value.getPassword() != null)
-			values.add(new ColumnValue(DBConstants.COL_NAME_PWD, value.getPassword()));
-		if (value.getSalt() != null)
-			values.add(new ColumnValue(DBConstants.COL_NAME_SALT, value.getSalt()));
+		if (user.getUsername() != null)
+			values.add(new ColumnValue(DBConstants.COL_NAME_USERNAME, user.getUsername()));
+		if (user.getPassword() != null)
+			values.add(new ColumnValue(DBConstants.COL_NAME_PWD, user.getPassword()));
+		if (user.getSalt() != null)
+			values.add(new ColumnValue(DBConstants.COL_NAME_SALT, user.getSalt()));
 
-		createdRows = mergeInto(jdbcTemplate, DBConstants.TBL_NAME_USER, keyColumns, values.toArray(new ColumnValue[0]));
+		mergedRows = mergeInto(jdbcTemplate, DBConstants.TBL_NAME_USER, keyColumns, values.toArray(new ColumnValue[0]));
 
-		if (createdRows == 1) {
-			LOGGER.info("The user with name '{}' has been updated.", value.getUsername());
+		if (mergedRows == 1) {
+			LOGGER.info("The user with name '{}' has been updated.", user.getUsername());
 			updateHandler.storeUpdate(jdbcTemplate, DBConstants.TBL_NAME_USER);
 			return true;
 		}

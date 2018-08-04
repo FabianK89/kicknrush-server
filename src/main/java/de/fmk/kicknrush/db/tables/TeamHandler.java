@@ -1,11 +1,13 @@
 package de.fmk.kicknrush.db.tables;
 
+import de.fmk.kicknrush.db.ColumnValue;
 import de.fmk.kicknrush.db.DBConstants;
 import de.fmk.kicknrush.models.Team;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -73,21 +75,32 @@ public class TeamHandler extends AbstractDBHandler<Integer, Team> {
 
 
 	@Override
-	public boolean merge(JdbcTemplate jdbcTemplate, Team value) {
-		final int      createdRows;
-		final Object[] values;
-		final String[] keyColumns;
+	public boolean merge(JdbcTemplate jdbcTemplate, Team team) {
+		final int               mergedRows;
+		final List<ColumnValue> values;
+		final String[]          keyColumns;
+
+		if (team == null) {
+			LOGGER.warn("MERGE FAILED: The team parameter is null.");
+			return false;
+		}
 
 		keyColumns = new String[] { DBConstants.COL_NAME_TEAM_ID };
-		values     = new Object[] { value.getTeamId(),
-		                            value.getTeamIconUrl(),
-		                            value.getTeamIconUrlSmall() == null ? value.getTeamIconUrl()
-		                                                                : value.getTeamIconUrlSmall(),
-		                            value.getTeamName() };
-		createdRows = mergeInto(jdbcTemplate, DBConstants.TBL_NAME_TEAM, keyColumns, values);
+		values     = new ArrayList<>();
 
-		if (createdRows == 1) {
-			LOGGER.info("The team with id '{}' and name '{}' has been updated.", value.getTeamId(), value.getTeamName());
+		values.add(new ColumnValue(DBConstants.COL_NAME_TEAM_ID, team.getTeamId()));
+
+		if (team.getTeamName() != null)
+			values.add(new ColumnValue(DBConstants.COL_NAME_TEAM_NAME, team.getTeamName()));
+		if (team.getTeamIconUrl() != null)
+			values.add(new ColumnValue(DBConstants.COL_NAME_TEAM_ICON, team.getTeamIconUrl()));
+		if (team.getTeamIconUrlSmall() != null)
+			values.add(new ColumnValue(DBConstants.COL_NAME_TEAM_ICON_SMALL, team.getTeamIconUrlSmall()));
+
+		mergedRows = mergeInto(jdbcTemplate, DBConstants.TBL_NAME_TEAM, keyColumns, values.toArray(new ColumnValue[0]));
+
+		if (mergedRows == 1) {
+			LOGGER.info("The team with id '{}' and name '{}' has been updated.", team.getTeamId(), team.getTeamName());
 			updateHandler.storeUpdate(jdbcTemplate, DBConstants.TBL_NAME_TEAM);
 			return true;
 		}

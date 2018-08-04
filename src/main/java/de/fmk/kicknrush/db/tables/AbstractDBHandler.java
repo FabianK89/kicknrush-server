@@ -40,8 +40,7 @@ abstract class AbstractDBHandler<K, V> implements IDBHandler<K, V> {
 		keyBuilder    = new StringBuilder(") KEY (");
 		valuesBuilder = new StringBuilder(") VALUES(");
 
-		queryBuilder.append(tableName);
-		keyBuilder.append(" KEY (");
+		queryBuilder.append(tableName).append("(");
 
 		for (int i = 0; i < keyColumns.length; i++) {
 			keyBuilder.append(keyColumns[i]);

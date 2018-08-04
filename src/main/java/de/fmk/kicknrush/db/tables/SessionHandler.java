@@ -1,5 +1,6 @@
 package de.fmk.kicknrush.db.tables;
 
+import de.fmk.kicknrush.db.ColumnValue;
 import de.fmk.kicknrush.db.DBConstants;
 import de.fmk.kicknrush.models.Session;
 import de.fmk.kicknrush.utils.TimeUtils;
@@ -8,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,20 +57,35 @@ public class SessionHandler extends AbstractDBHandler<UUID, Session> {
 
 
 	@Override
-	public boolean merge(JdbcTemplate jdbcTemplate, Session value) {
-		final int                   createdRows;
-		final Object[]              values;
+	public boolean merge(JdbcTemplate jdbcTemplate, Session session) {
+		final int                   mergedRows;
+		final List<ColumnValue>     values;
 		final String[]              keyColumns;
 
-		keyColumns = new String[] { DBConstants.COL_NAME_ID };
-		values     = new Object[] { value.getSessionID(),
-		                            value.getUserID(),
-		                            TimeUtils.createTimestamp(value.getLoggedInTime()),
-		                            TimeUtils.createTimestamp(value.getLastActionTime()) };
-		createdRows = mergeInto(jdbcTemplate, DBConstants.TBL_NAME_SESSION, keyColumns, values);
+		if (session == null) {
+			LOGGER.warn("MERGE FAILED: The session parameter is null.");
+			return false;
+		}
 
-		if (createdRows == 1) {
-			LOGGER.info("Session has been updated for the user with id '{}'.", value.getUserID());
+		keyColumns = new String[] { DBConstants.COL_NAME_ID };
+		values     = new ArrayList<>();
+
+		values.add(new ColumnValue(DBConstants.COL_NAME_ID, session.getSessionID()));
+		values.add(new ColumnValue(DBConstants.COL_NAME_USER_ID, session.getUserID()));
+		values.add(new ColumnValue(DBConstants.COL_NAME_LAST_ACTION,
+		                           TimeUtils.createTimestamp(session.getLastActionTime())));
+
+		if (session.getLoggedInTime() != null)
+			values.add(new ColumnValue(DBConstants.COL_NAME_LOGGED_IN,
+			           TimeUtils.createTimestamp(session.getLoggedInTime())));
+
+		mergedRows = mergeInto(jdbcTemplate,
+		                       DBConstants.TBL_NAME_SESSION,
+		                       keyColumns,
+		                       values.toArray(new ColumnValue[0]));
+
+		if (mergedRows == 1) {
+			LOGGER.info("Session has been updated for the user with id '{}'.", session.getUserID());
 			return true;
 		}
 
