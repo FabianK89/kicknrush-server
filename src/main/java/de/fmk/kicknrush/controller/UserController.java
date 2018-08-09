@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,9 +28,6 @@ import java.util.UUID;
 @RequestMapping(path="/api/user")
 public class UserController {
 	private static final Logger LOGGER = LoggerFactory.getLogger(UserController.class);
-
-	private static final String INVALID_PARAMETERS        = "'{}' or '{}' is not a valid id.";
-	private static final String IS_NOT_A_VALID_SESSION_ID = "'{}' is not a valid session id.";
 
 	@Autowired
 	private DatabaseHandler dbHandler;
@@ -56,7 +52,7 @@ public class UserController {
 		if (sessionID == null || userID == null || username == null)
 			return ResponseEntity.badRequest().build();
 
-		adminResponse = isAdminSession(sessionID);
+		adminResponse = SessionHelper.isAdminSession(dbHandler, sessionID);
 
 		if (adminResponse.getStatusCode() != HttpStatus.OK)
 			return adminResponse;
@@ -88,7 +84,7 @@ public class UserController {
 		if (sessionID == null || userID == null)
 			return ResponseEntity.badRequest().build();
 
-		adminResponse = isAdminSession(sessionID);
+		adminResponse = SessionHelper.isAdminSession(dbHandler, sessionID);
 
 		if (adminResponse.getStatusCode() != HttpStatus.OK)
 			return adminResponse;
@@ -163,7 +159,7 @@ public class UserController {
 				return ResponseEntity.ok().build();
 		}
 		catch (IllegalArgumentException iaex) {
-			LOGGER.error(IS_NOT_A_VALID_SESSION_ID, sessionID);
+			LOGGER.error(SessionHelper.IS_NOT_A_VALID_SESSION_ID, sessionID);
 			return ResponseEntity.badRequest().build();
 		}
 
@@ -188,10 +184,10 @@ public class UserController {
 		if (sessionID == null || userID == null)
 			return ResponseEntity.badRequest().build();
 
-		adminResponse = isAdminSession(sessionID);
+		adminResponse = SessionHelper.isAdminSession(dbHandler, sessionID);
 
 		if (adminResponse.getStatusCode() != HttpStatus.OK) {
-			sessionResponse = isValidUserSession(sessionID, userID);
+			sessionResponse = SessionHelper.isValidUserSession(dbHandler, sessionID, userID);
 
 			if (sessionResponse.getStatusCode() != HttpStatus.OK)
 				return sessionResponse;
@@ -207,34 +203,6 @@ public class UserController {
 	}
 
 
-	private <T> ResponseEntity<T> isAdminSession(final String sessionID) {
-		try {
-			if (dbHandler.isAdminSession(UUID.fromString(sessionID)))
-				return ResponseEntity.ok().build();
-		}
-		catch (IllegalArgumentException iaex) {
-			LOGGER.error(IS_NOT_A_VALID_SESSION_ID, sessionID);
-			return ResponseEntity.badRequest().build();
-		}
-
-		return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-	}
-
-
-	private <T> ResponseEntity<T> isValidUserSession(final String sessionID, final String userID) {
-		try {
-			if (dbHandler.checkSession(UUID.fromString(sessionID), UUID.fromString(userID)))
-				return ResponseEntity.ok().build();
-		}
-		catch (IllegalArgumentException iaex) {
-			LOGGER.error(INVALID_PARAMETERS, sessionID, userID);
-			return ResponseEntity.badRequest().build();
-		}
-
-		return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-	}
-
-
 	/**
 	 * Collect all usernames from the database.
 	 * @param sessionID ID of an user session.
@@ -246,7 +214,7 @@ public class UserController {
 		final List<String>             usernames;
 		final ResponseEntity<String[]> sessionResponse;
 
-		sessionResponse = isValidUserSession(sessionID, userID);
+		sessionResponse = SessionHelper.isValidUserSession(dbHandler, sessionID, userID);
 
 		if (sessionResponse.getStatusCode() != HttpStatus.OK)
 			return sessionResponse;
@@ -268,7 +236,7 @@ public class UserController {
 		final List<UserDTO>             users;
 		final ResponseEntity<UserDTO[]> sessionResponse;
 
-		sessionResponse = isValidUserSession(sessionID, userID);
+		sessionResponse = SessionHelper.isValidUserSession(dbHandler, sessionID, userID);
 
 		if (sessionResponse.getStatusCode() != HttpStatus.OK)
 			return sessionResponse;
