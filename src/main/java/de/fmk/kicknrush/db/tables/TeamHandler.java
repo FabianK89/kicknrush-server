@@ -42,8 +42,6 @@ public class TeamHandler extends AbstractDBHandler<Integer, Team> {
 		            .append(DBConstants.COL_NAME_TEAM_NAME).append(" VARCHAR(255) NOT NULL);");
 
 		jdbcTemplate.execute(queryBuilder.toString());
-
-		updateHandler.storeUpdate(jdbcTemplate, DBConstants.TBL_NAME_TEAM);
 	}
 
 

@@ -27,4 +27,9 @@ public class Team {
 	private String teamIconUrl;
 	private String teamIconUrlSmall;
 	private String teamName;
+
+
+	public Team(int teamId) {
+		this.teamId = teamId;
+	}
 }

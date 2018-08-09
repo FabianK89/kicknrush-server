@@ -2,19 +2,23 @@ package de.fmk.kicknrush.controller;
 
 import de.fmk.kicknrush.db.DBConstants;
 import de.fmk.kicknrush.db.DatabaseHandler;
+import de.fmk.kicknrush.dto.MatchDTO;
+import de.fmk.kicknrush.models.Group;
 import de.fmk.kicknrush.models.Match;
 import de.fmk.kicknrush.models.Team;
 import de.fmk.kicknrush.service.OpenLigaDBService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -42,18 +46,57 @@ public class LeagueController {
 
 		if (teams.isEmpty()) {
 			teams = oldbService.getTeams();
-			teams.forEach(team -> dbHandler.addTeam(team));
+			teams.forEach(team -> {
+				team.setTeamIconUrlSmall(team.getTeamIconUrl());
+				dbHandler.addTeam(team);
+			});
 		}
 
 		return teams;
 	}
 
 
-	@PostMapping("/getMatches")
-	public List<Match> getMatches(@RequestBody MultiValueMap<String, String> body) {
-		List<Match> matches;
+	@RequestMapping("/loadGroups")
+	public boolean loadGroups() {
+		List<Group> groups = oldbService.getGroups();
 
-		return null;
+		groups.forEach(group -> dbHandler.addGroup(group));
+
+		return !groups.isEmpty();
+	}
+
+
+	@RequestMapping("/loadMatches")
+	public boolean loadMatches() {
+		List<Match> matches = oldbService.getAllMatches();
+
+		matches.forEach(match -> dbHandler.addMatch(match));
+
+		return !matches.isEmpty();
+	}
+
+
+	/**
+	 * Collect all matches from the databae.
+	 * @param sessionID ID of an user session.
+	 * @param userID ID of the user belonging to the session.
+	 * @return an array with all matches.
+	 */
+	@PostMapping("/getMatches")
+	public ResponseEntity<MatchDTO[]> getMatches(@RequestParam String sessionID, @RequestParam String userID) {
+		final List<MatchDTO>             matches;
+		final ResponseEntity<MatchDTO[]> sessionResponse;
+
+		sessionResponse = SessionHelper.isValidUserSession(dbHandler, sessionID, userID);
+
+		if (sessionResponse.getStatusCode() != HttpStatus.OK)
+			return sessionResponse;
+
+		matches = new ArrayList<>();
+
+		dbHandler.getMatches().forEach(match -> matches.add(match.toDTO()));
+
+		return ResponseEntity.ok(matches.toArray(new MatchDTO[0]));
 	}
 
 

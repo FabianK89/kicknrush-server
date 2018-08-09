@@ -1,6 +1,8 @@
 package de.fmk.kicknrush.db;
 
 
+import de.fmk.kicknrush.db.tables.GroupHandler;
+import de.fmk.kicknrush.db.tables.MatchHandler;
 import de.fmk.kicknrush.db.tables.SessionHandler;
 import de.fmk.kicknrush.db.tables.TeamHandler;
 import de.fmk.kicknrush.db.tables.UpdateHandler;
@@ -11,7 +13,6 @@ import de.fmk.kicknrush.models.Session;
 import de.fmk.kicknrush.models.Team;
 import de.fmk.kicknrush.models.Update;
 import de.fmk.kicknrush.models.User;
-import de.fmk.kicknrush.utils.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,8 @@ public class DatabaseHandler {
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
+	private GroupHandler   groupHandler;
+	private MatchHandler   matchHandler;
 	private SessionHandler sessionHandler;
 	private TeamHandler    teamHandler;
 	private UpdateHandler  updateHandler;
@@ -49,8 +52,10 @@ public class DatabaseHandler {
 	public DatabaseHandler() {
 		sessionHandler = new SessionHandler();
 		updateHandler  = new UpdateHandler();
-		userHandler    = new UserHandler(updateHandler);
+		groupHandler   = new GroupHandler(updateHandler);
 		teamHandler    = new TeamHandler(updateHandler);
+		matchHandler   = new MatchHandler(groupHandler, teamHandler, updateHandler);
+		userHandler    = new UserHandler(updateHandler);
 	}
 
 
@@ -75,10 +80,10 @@ public class DatabaseHandler {
 			teamHandler.createTable(jdbcTemplate);
 
 		if (!tables.contains(DBConstants.TBL_NAME_GROUP))
-			createGroupsTable();
+			groupHandler.createTable(jdbcTemplate);
 
 		if (!tables.contains(DBConstants.TBL_NAME_MATCH))
-			createMatchesTable();
+			matchHandler.createTable(jdbcTemplate);
 
 		if (!tables.contains(DBConstants.TBL_NAME_BET))
 			createBetsTable();
@@ -130,42 +135,6 @@ public class DatabaseHandler {
 	}
 
 
-	private void createGroupsTable() {
-		final StringBuilder queryBuilder;
-
-		LOGGER.info("Create the groups table.");
-
-		queryBuilder = new StringBuilder();
-		queryBuilder.append(CREATE_TABLE_IF_NOT_EXISTS)
-		            .append(DBConstants.TBL_NAME_GROUP)
-		            .append("(").append(DBConstants.COL_NAME_GROUP_ID).append(" INTEGER PRIMARY KEY, ")
-		            .append(DBConstants.COL_NAME_GROUP_NAME).append(" VARCHAR(255) NOT NULL, ")
-		            .append(DBConstants.COL_NAME_GROUP_ORDER_ID).append(" INTEGER NOT NULL, ")
-		            .append(DBConstants.COL_NAME_YEAR).append(" INTEGER NOT NULL);");
-
-		jdbcTemplate.execute(queryBuilder.toString());
-	}
-
-
-	private void createMatchesTable() {
-		final StringBuilder queryBuilder;
-
-		LOGGER.info("Create the matches table.");
-
-		queryBuilder = new StringBuilder();
-		queryBuilder.append(CREATE_TABLE_IF_NOT_EXISTS)
-		            .append(DBConstants.TBL_NAME_MATCH)
-		            .append("(").append(DBConstants.COL_NAME_MATCH_ID).append(" INTEGER PRIMARY KEY, ")
-		            .append(DBConstants.COL_NAME_MATCH_OVER).append(" BOOLEAN, ")
-		            .append(DBConstants.COL_NAME_KICKOFF).append(" TIMESTAMP WITH TIME ZONE, ")
-		            .append(DBConstants.COL_NAME_GROUP_ID).append(" INTEGER NOT NULL, ")
-		            .append(DBConstants.COL_NAME_TEAM_GUEST).append(" INTEGER NOT NULL, ")
-		            .append(DBConstants.COL_NAME_TEAM_HOME).append(" INTEGER NOT NULL);");
-
-		jdbcTemplate.execute(queryBuilder.toString());
-	}
-
-
 	public List<String> getUsernames() {
 		return userHandler.getUsernames(jdbcTemplate);
 	}
@@ -181,14 +150,13 @@ public class DatabaseHandler {
 	}
 
 
+	public List<Match> getMatches() {
+		return matchHandler.getValues(jdbcTemplate);
+	}
+
+
 	public List<Integer> getMatchIDs() {
-		final StringBuilder queryBuilder;
-
-		queryBuilder = new StringBuilder();
-		queryBuilder.append("SELECT ").append(DBConstants.COL_NAME_MATCH_ID)
-		            .append(" FROM ").append(DBConstants.TBL_NAME_MATCH);
-
-		return jdbcTemplate.query(queryBuilder.toString(), (rs, rowNum) -> rs.getInt(DBConstants.COL_NAME_MATCH_ID));
+		return matchHandler.getIDs(jdbcTemplate);
 	}
 
 
@@ -211,23 +179,7 @@ public class DatabaseHandler {
 
 
 	public boolean addGroup(final Group group) {
-		final int      createdRows;
-		final Object[] values;
-		final String[] columnNames;
-
-		columnNames = new String[] { DBConstants.COL_NAME_GROUP_ID,
-		                             DBConstants.COL_NAME_GROUP_NAME,
-		                             DBConstants.COL_NAME_GROUP_ORDER_ID,
-		                             DBConstants.COL_NAME_YEAR };
-		values      = new Object[] { group.getGroupID(), group.getGroupName(), group.getGroupOrderID(), group.getYear() };
-		createdRows = insertInto(DBConstants.TBL_NAME_GROUP, columnNames, values);
-
-		if (createdRows == 1) {
-			LOGGER.info("The group with id '{}' and name '{}' has been created.", group.getGroupID(), group.getGroupName());
-			return true;
-		}
-
-		return false;
+		return groupHandler.merge(jdbcTemplate, group);
 	}
 
 
@@ -237,30 +189,7 @@ public class DatabaseHandler {
 
 
 	public boolean addMatch(final Match match) {
-		final int      createdRows;
-		final Object[] values;
-		final String[] columnNames;
-
-		columnNames = new String[] { DBConstants.COL_NAME_MATCH_ID,
-		                             DBConstants.COL_NAME_MATCH_OVER,
-		                             DBConstants.COL_NAME_KICKOFF,
-		                             DBConstants.COL_NAME_GROUP_ID,
-		                             DBConstants.COL_NAME_TEAM_GUEST,
-		                             DBConstants.COL_NAME_TEAM_HOME };
-		values      = new Object[] { match.getMatchID(),
-		                             match.isMatchIsFinished(),
-		                             TimeUtils.createTimestamp(match.getMatchDateTimeUTC()),
-		                             match.getGroup().getGroupID(),
-		                             match.getTeam2().getTeamId(),
-		                             match.getTeam1().getTeamId() };
-		createdRows = insertInto(DBConstants.TBL_NAME_MATCH, columnNames, values);
-
-		if (createdRows == 1) {
-			LOGGER.info("The match with id '{}' has been created.", match.getMatchID());
-			return true;
-		}
-
-		return false;
+		return matchHandler.merge(jdbcTemplate, match);
 	}
 
 
@@ -313,32 +242,6 @@ public class DatabaseHandler {
 		session.setLastActionTime(now);
 
 		return sessionHandler.merge(jdbcTemplate, session);
-	}
-
-
-	private int insertInto(final String table, final String[] columns, final Object[] values) {
-		final StringBuilder queryBuilder;
-		final StringBuilder valuesBuilder;
-
-		queryBuilder  = new StringBuilder("INSERT INTO ");
-		valuesBuilder = new StringBuilder(") VALUES(");
-
-		queryBuilder.append(table).append("(");
-
-		for (int i = 0; i < columns.length; i++) {
-			queryBuilder.append(columns[i]);
-			valuesBuilder.append("?");
-
-			if (i + 1 < columns.length) {
-				queryBuilder.append(", ");
-				valuesBuilder.append(",");
-			}
-		}
-
-		valuesBuilder.append(");");
-		queryBuilder.append(valuesBuilder.toString());
-
-		return jdbcTemplate.update(queryBuilder.toString(), values);
 	}
 
 

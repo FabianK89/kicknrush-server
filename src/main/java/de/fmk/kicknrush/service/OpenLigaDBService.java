@@ -1,5 +1,7 @@
 package de.fmk.kicknrush.service;
 
+import de.fmk.kicknrush.models.Group;
+import de.fmk.kicknrush.models.Match;
 import de.fmk.kicknrush.models.Team;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +28,50 @@ public class OpenLigaDBService {
 	private RestTemplate restTemplate;
 
 
+	public List<Group> getGroups() {
+		final Group[] groups;
+		final String  restUrl;
+
+		restUrl = URL.concat("getavailablegroups/bl1/").concat(Integer.toString(LocalDate.now().getYear()));
+
+		LOGGER.info("Fetch groups from {}.", restUrl);
+
+		try {
+			groups = restTemplate.getForObject(restUrl, Group[].class);
+		}
+		catch (HttpServerErrorException hseex) {
+			LOGGER.error("Could not fetch groups from {}.", restUrl, hseex);
+			return new ArrayList<>();
+		}
+
+		return Arrays.asList(groups);
+	}
+
+
+	public List<Match> getAllMatches() {
+		final Match[] matches;
+		final String  restUrl;
+
+		restUrl = URL.concat("getmatchdata/bl1/").concat(Integer.toString(LocalDate.now().getYear()));
+
+		LOGGER.info("Fetch all matches from {}.", restUrl);
+
+		try {
+			matches = restTemplate.getForObject(restUrl, Match[].class);
+		}
+		catch (HttpServerErrorException hseex) {
+			LOGGER.error("Could not fetch matches from {}.", restUrl, hseex);
+			return new ArrayList<>();
+		}
+
+		return Arrays.asList(matches);
+	}
+
+
+	/**
+	 * Get the teams of '1. Bundesliga' in the current year.
+	 * @return a list of the teams or en empty list if an error occurred.
+	 */
 	public List<Team> getTeams() {
 		final String restUrl;
 		final Team[] teams;
@@ -39,7 +85,7 @@ public class OpenLigaDBService {
 		}
 		catch (HttpServerErrorException hseex)
 		{
-			LOGGER.info("Could not fetch teams from {}.", restUrl);
+			LOGGER.error("Could not fetch teams from {}.", restUrl, hseex);
 			return new ArrayList<>();
 		}
 
