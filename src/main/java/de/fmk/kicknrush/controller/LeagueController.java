@@ -10,7 +10,6 @@ import de.fmk.kicknrush.service.OpenLigaDBService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -85,12 +84,12 @@ public class LeagueController {
 	@PostMapping("/getMatches")
 	public ResponseEntity<MatchDTO[]> getMatches(@RequestParam String sessionID, @RequestParam String userID) {
 		final List<MatchDTO>             matches;
-		final ResponseEntity<MatchDTO[]> sessionResponse;
-
-		sessionResponse = SessionHelper.isValidUserSession(dbHandler, sessionID, userID);
-
-		if (sessionResponse.getStatusCode() != HttpStatus.OK)
-			return sessionResponse;
+//		final ResponseEntity<MatchDTO[]> sessionResponse;
+//
+//		sessionResponse = SessionHelper.isValidUserSession(dbHandler, sessionID, userID);
+//
+//		if (sessionResponse.getStatusCode() != HttpStatus.OK)
+//			return sessionResponse;
 
 		matches = new ArrayList<>();
 
@@ -105,6 +104,7 @@ public class LeagueController {
 		jdbcTemplate.execute("DROP TABLE IF EXISTS " + DBConstants.TBL_NAME_GROUP);
 		jdbcTemplate.execute("DROP TABLE IF EXISTS " + DBConstants.TBL_NAME_MATCH);
 		jdbcTemplate.execute("DROP TABLE IF EXISTS " + DBConstants.TBL_NAME_TEAM);
+		jdbcTemplate.execute("DROP TABLE IF EXISTS " + DBConstants.TBL_NAME_GOAL);
 		LOGGER.info("Tables have been dropped.");
 	}
 }

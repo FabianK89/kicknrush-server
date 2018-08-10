@@ -3,7 +3,6 @@ package de.fmk.kicknrush.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import de.fmk.kicknrush.dto.MatchDTO;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -17,32 +16,20 @@ import lombok.ToString;
  */
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @ToString
 @EqualsAndHashCode
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategy.UpperCamelCaseStrategy.class)
-public class Match {
-	private boolean matchIsFinished;
+public class Goal {
+	private boolean isOvertime;
+	private boolean isOwnGoal;
+	private boolean isPenalty;
+	private int     goalGetterID;
 	private int     matchID;
-	private Goal[]  goals;
-	private Group   group;
-	private String  matchDateTimeUTC;
-	private Team    team1;
-	private Team    team2;
-
-
-	public MatchDTO toDTO() {
-		final MatchDTO dto = new MatchDTO();
-
-		dto.setMatchID(matchID);
-		dto.setGroupID(group.getGroupID());
-		dto.setMatchDateTimeUTC(matchDateTimeUTC);
-		dto.setTeamGuestID(team2.getTeamId());
-		dto.setTeamHomeID(team1.getTeamId());
-		dto.setMatchIsFinished(matchIsFinished);
-
-		return dto;
-	}
+	private int     matchMinute;
+	private int     scoreTeam1;
+	private int     scoreTeam2;
+	private String  goalGetterName;
 }

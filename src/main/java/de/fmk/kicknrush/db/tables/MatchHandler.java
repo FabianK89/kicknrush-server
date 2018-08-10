@@ -22,16 +22,19 @@ import java.util.List;
 public class MatchHandler extends AbstractDBHandler<Integer, Match> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MatchHandler.class);
 
+	private final GoalHandler   goalHandler;
 	private final GroupHandler  groupHandler;
 	private final TeamHandler   teamHandler;
 	private final UpdateHandler updateHandler;
 
 
-	public MatchHandler(GroupHandler  groupHandler,
+	public MatchHandler(GoalHandler   goalHandler,
+	                    GroupHandler  groupHandler,
 	                    TeamHandler   teamHandler,
 	                    UpdateHandler updateHandler) {
 		super();
 
+		this.goalHandler   = goalHandler;
 		this.groupHandler  = groupHandler;
 		this.teamHandler   = teamHandler;
 		this.updateHandler = updateHandler;
@@ -84,6 +87,7 @@ public class MatchHandler extends AbstractDBHandler<Integer, Match> {
 			kickOff = TimeUtils.convertTimestamp((TimestampWithTimeZone) rs.getObject(DBConstants.COL_NAME_KICKOFF));
 			match   = new Match(rs.getBoolean(DBConstants.COL_NAME_MATCH_OVER),
 			                    rs.getInt(DBConstants.COL_NAME_MATCH_ID),
+			                    goalHandler.getGoalsForMatchID(jdbcTemplate, rs.getInt(DBConstants.COL_NAME_MATCH_ID)),
 			                    new Group(rs.getInt(DBConstants.COL_NAME_GROUP_ID)),
 			                    TimeUtils.convertLocalDateTimeUTC(kickOff),
 			                    new Team(rs.getInt(DBConstants.COL_NAME_TEAM_HOME)),
@@ -117,7 +121,7 @@ public class MatchHandler extends AbstractDBHandler<Integer, Match> {
 		if (match.getMatchDateTimeUTC() != null)
 			values.add(new ColumnValue(DBConstants.COL_NAME_KICKOFF, TimeUtils.createTimestamp(match.getMatchDateTimeUTC())));
 
-		mergedRows = mergeInto(jdbcTemplate, DBConstants.TBL_NAME_MATCH,  keyColumns,  values.toArray(new ColumnValue[0]));
+		mergedRows = mergeInto(jdbcTemplate, DBConstants.TBL_NAME_MATCH, keyColumns, values.toArray(new ColumnValue[0]));
 
 		if (mergedRows == 1) {
 			LOGGER.info("The match with id '{}' has been updated.", match.getMatchID());
@@ -145,6 +149,7 @@ public class MatchHandler extends AbstractDBHandler<Integer, Match> {
 			kickOff = TimeUtils.convertTimestamp((TimestampWithTimeZone) rs.getObject(DBConstants.COL_NAME_KICKOFF));
 			match   = new Match(rs.getBoolean(DBConstants.COL_NAME_MATCH_OVER),
 			                    rs.getInt(DBConstants.COL_NAME_MATCH_ID),
+			                    goalHandler.getGoalsForMatchID(jdbcTemplate, id),
 			                    groupHandler.findByID(jdbcTemplate, rs.getInt(DBConstants.COL_NAME_GROUP_ID)),
 			                    TimeUtils.convertLocalDateTimeUTC(kickOff),
 			                    teamHandler.findByID(jdbcTemplate, rs.getInt(DBConstants.COL_NAME_TEAM_HOME)),

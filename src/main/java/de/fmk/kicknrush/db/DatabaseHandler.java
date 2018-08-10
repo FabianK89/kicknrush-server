@@ -1,12 +1,14 @@
 package de.fmk.kicknrush.db;
 
 
+import de.fmk.kicknrush.db.tables.GoalHandler;
 import de.fmk.kicknrush.db.tables.GroupHandler;
 import de.fmk.kicknrush.db.tables.MatchHandler;
 import de.fmk.kicknrush.db.tables.SessionHandler;
 import de.fmk.kicknrush.db.tables.TeamHandler;
 import de.fmk.kicknrush.db.tables.UpdateHandler;
 import de.fmk.kicknrush.db.tables.UserHandler;
+import de.fmk.kicknrush.models.Goal;
 import de.fmk.kicknrush.models.Group;
 import de.fmk.kicknrush.models.Match;
 import de.fmk.kicknrush.models.Session;
@@ -41,6 +43,7 @@ public class DatabaseHandler {
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
+	private GoalHandler    goalHandler;
 	private GroupHandler   groupHandler;
 	private MatchHandler   matchHandler;
 	private SessionHandler sessionHandler;
@@ -52,9 +55,10 @@ public class DatabaseHandler {
 	public DatabaseHandler() {
 		sessionHandler = new SessionHandler();
 		updateHandler  = new UpdateHandler();
+		goalHandler    = new GoalHandler();
 		groupHandler   = new GroupHandler(updateHandler);
 		teamHandler    = new TeamHandler(updateHandler);
-		matchHandler   = new MatchHandler(groupHandler, teamHandler, updateHandler);
+		matchHandler   = new MatchHandler(goalHandler, groupHandler, teamHandler, updateHandler);
 		userHandler    = new UserHandler(updateHandler);
 	}
 
@@ -81,6 +85,9 @@ public class DatabaseHandler {
 
 		if (!tables.contains(DBConstants.TBL_NAME_GROUP))
 			groupHandler.createTable(jdbcTemplate);
+
+		if (!tables.contains(DBConstants.TBL_NAME_GOAL))
+			goalHandler.createTable(jdbcTemplate);
 
 		if (!tables.contains(DBConstants.TBL_NAME_MATCH))
 			matchHandler.createTable(jdbcTemplate);
@@ -189,7 +196,19 @@ public class DatabaseHandler {
 
 
 	public boolean addMatch(final Match match) {
-		return matchHandler.merge(jdbcTemplate, match);
+		final boolean matchAdded;
+
+		matchAdded = matchHandler.merge(jdbcTemplate, match);
+
+		for (final Goal goal : match.getGoals()) {
+			goal.setMatchID(match.getMatchID());
+
+			if (!goalHandler.merge(jdbcTemplate, goal))
+				LOGGER.error("Could not save the goal of {} ({}:{}) in the match with id '{}' to the database.",
+				             goal.getGoalGetterName(), goal.getScoreTeam1(), goal.getScoreTeam2(), match.getMatchID());
+		}
+
+		return matchAdded;
 	}
 
 
