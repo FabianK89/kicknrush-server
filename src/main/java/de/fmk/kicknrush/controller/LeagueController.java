@@ -21,6 +21,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,11 +59,39 @@ public class LeagueController {
 		List<Team> teams = oldbService.getTeams();
 
 		teams.forEach(team -> {
+
 			team.setTeamIconUrlSmall(team.getTeamIconUrl());
 			dbHandler.addTeam(team);
 		});
 
 		return !teams.isEmpty();
+	}
+
+
+	public void storeImage(final String url) {
+		final URLConnection connection;
+
+		byte[] buf;
+		int    len;
+
+		buf = new byte[1024];
+
+		if (url == null)
+			return;
+
+		try {
+			connection = new URL(url).openConnection();
+
+			try (InputStream  is = connection.getInputStream();
+			     OutputStream os = new FileOutputStream(new File(""))) {
+
+				while ((len = is.read(buf)) > 0)
+					os.write(buf, 0, len);
+			}
+		}
+		catch (IOException ioex) {
+			LOGGER.error("Could not load the image from {}.", url, ioex);
+		}
 	}
 
 
