@@ -3,6 +3,7 @@ package de.fmk.kicknrush.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import de.fmk.kicknrush.dto.GroupDTO;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -27,5 +28,17 @@ public class Group {
 
 	public Group(int groupID) {
 		this.groupID = groupID;
+	}
+
+
+	public GroupDTO toDTO() {
+		final GroupDTO dto = new GroupDTO();
+
+		dto.setGroupID(groupID);
+		dto.setGroupOrderID(groupOrderID);
+		dto.setYear(year);
+		dto.setGroupName(groupName);
+
+		return dto;
 	}
 }

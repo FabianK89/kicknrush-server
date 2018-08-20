@@ -81,7 +81,7 @@ public class UpdateHandler extends AbstractDBHandler<String, Update> {
 
 		values.add(new ColumnValue(DBConstants.COL_NAME_TABLE_NAME, update.getTableName()));
 		values.add(new ColumnValue(DBConstants.COL_NAME_LAST_UPDATE,
-		                           TimeUtils.createTimestamp(update.getLastUpdateUTC())));
+		                           TimeUtils.createTimestamp(update.getLastUpdateUTC(), true)));
 
 		mergedRows = mergeInto(jdbcTemplate,
 		                       DBConstants.TBL_NAME_UPDATES,

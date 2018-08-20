@@ -93,6 +93,9 @@ public class MatchHandler extends AbstractDBHandler<Integer, Match> {
 			                    new Team(rs.getInt(DBConstants.COL_NAME_TEAM_HOME)),
 			                    new Team(rs.getInt(DBConstants.COL_NAME_TEAM_GUEST)));
 
+			System.out.println(match.getTeam1().getTeamId() + " : " + match.getTeam2().getTeamId()
+					+ " >> " + match.getMatchDateTimeUTC());
+
 			return match;
 		});
 	}
@@ -119,7 +122,8 @@ public class MatchHandler extends AbstractDBHandler<Integer, Match> {
 		values.add(new ColumnValue(DBConstants.COL_NAME_MATCH_OVER, match.isMatchIsFinished()));
 
 		if (match.getMatchDateTimeUTC() != null)
-			values.add(new ColumnValue(DBConstants.COL_NAME_KICKOFF, TimeUtils.createTimestamp(match.getMatchDateTimeUTC())));
+			values.add(new ColumnValue(DBConstants.COL_NAME_KICKOFF,
+			                           TimeUtils.createTimestamp(match.getMatchDateTimeUTC(), true)));
 
 		mergedRows = mergeInto(jdbcTemplate, DBConstants.TBL_NAME_MATCH, keyColumns, values.toArray(new ColumnValue[0]));
 

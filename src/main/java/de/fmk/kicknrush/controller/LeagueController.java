@@ -2,7 +2,10 @@ package de.fmk.kicknrush.controller;
 
 import de.fmk.kicknrush.db.DBConstants;
 import de.fmk.kicknrush.db.DatabaseHandler;
+import de.fmk.kicknrush.dto.GroupDTO;
 import de.fmk.kicknrush.dto.MatchDTO;
+import de.fmk.kicknrush.dto.TeamDTO;
+import de.fmk.kicknrush.dto.UserDTO;
 import de.fmk.kicknrush.models.Group;
 import de.fmk.kicknrush.models.Match;
 import de.fmk.kicknrush.models.Team;
@@ -14,8 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
@@ -38,21 +41,22 @@ public class LeagueController {
 	private OpenLigaDBService oldbService;
 
 
-	@RequestMapping("/getTeams")
-	public List<Team> getTeams() {
-		List<Team> teams;
+	@RequestMapping("/load")
+	public boolean load() {
+		return loadTeams() && loadGroups() && loadMatches();
+	}
 
-		teams = dbHandler.getTeams();
 
-		if (teams.isEmpty()) {
-			teams = oldbService.getTeams();
-			teams.forEach(team -> {
-				team.setTeamIconUrlSmall(team.getTeamIconUrl());
-				dbHandler.addTeam(team);
-			});
-		}
+	@RequestMapping("/loadTeams")
+	public boolean loadTeams() {
+		List<Team> teams = oldbService.getTeams();
 
-		return teams;
+		teams.forEach(team -> {
+			team.setTeamIconUrlSmall(team.getTeamIconUrl());
+			dbHandler.addTeam(team);
+		});
+
+		return !teams.isEmpty();
 	}
 
 
@@ -77,17 +81,39 @@ public class LeagueController {
 
 
 	/**
-	 * Collect all matches from the databae.
-	 * @param sessionID ID of an user session.
-	 * @param userID ID of the user belonging to the session.
+	 * Collect all groups from the database.
+	 * @param body Request body: Session id and user id must be set.
+	 * @return an array with all groups.
+	 */
+	@PostMapping("/getGroups")
+	public ResponseEntity<GroupDTO[]> getGroups(@RequestBody UserDTO body) {
+		final List<GroupDTO>             groups;
+		final ResponseEntity<GroupDTO[]> sessionResponse;
+
+		sessionResponse = SessionHelper.isValidUserSession(dbHandler, body.getSessionID(), body.getUserID());
+
+		if (sessionResponse.getStatusCode() != HttpStatus.OK)
+			return sessionResponse;
+
+		groups = new ArrayList<>();
+
+		dbHandler.getGroups().forEach(group -> groups.add(group.toDTO()));
+
+		return ResponseEntity.ok(groups.toArray(new GroupDTO[0]));
+	}
+
+
+	/**
+	 * Collect all matches from the database.
+	 * @param body Request body: Session id and user id must be set.
 	 * @return an array with all matches.
 	 */
 	@PostMapping("/getMatches")
-	public ResponseEntity<MatchDTO[]> getMatches(@RequestParam String sessionID, @RequestParam String userID) {
+	public ResponseEntity<MatchDTO[]> getMatches(@RequestBody UserDTO body) {
 		final List<MatchDTO>             matches;
 		final ResponseEntity<MatchDTO[]> sessionResponse;
 
-		sessionResponse = SessionHelper.isValidUserSession(dbHandler, sessionID, userID);
+		sessionResponse = SessionHelper.isValidUserSession(dbHandler, body.getSessionID(), body.getUserID());
 
 		if (sessionResponse.getStatusCode() != HttpStatus.OK)
 			return sessionResponse;
@@ -97,6 +123,29 @@ public class LeagueController {
 		dbHandler.getMatches().forEach(match -> matches.add(match.toDTO()));
 
 		return ResponseEntity.ok(matches.toArray(new MatchDTO[0]));
+	}
+
+
+	/**
+	 * Collect all teams from the database.
+	 * @param body Request body: Session id and user id must be set.
+	 * @return an array with all teams.
+	 */
+	@PostMapping("/getTeams")
+	public ResponseEntity<TeamDTO[]> getTeams(@RequestBody UserDTO body) {
+		final List<TeamDTO>             teams;
+		final ResponseEntity<TeamDTO[]> sessionResponse;
+
+		sessionResponse = SessionHelper.isValidUserSession(dbHandler, body.getSessionID(), body.getUserID());
+
+		if (sessionResponse.getStatusCode() != HttpStatus.OK)
+			return sessionResponse;
+
+		teams = new ArrayList<>();
+
+		dbHandler.getTeams().forEach(team -> teams.add(team.toDTO()));
+
+		return ResponseEntity.ok(teams.toArray(new TeamDTO[0]));
 	}
 
 

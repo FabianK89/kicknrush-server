@@ -84,6 +84,7 @@ public class GroupHandler extends AbstractDBHandler<Integer, Group> {
 
 		if (mergedRows == 1) {
 			LOGGER.info("The group with id '{}' and name '{}' has been updated.", group.getGroupID(), group.getGroupName());
+			updateHandler.storeUpdate(jdbcTemplate, DBConstants.TBL_NAME_GROUP);
 			return true;
 		}
 

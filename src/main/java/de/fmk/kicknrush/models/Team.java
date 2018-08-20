@@ -3,6 +3,7 @@ package de.fmk.kicknrush.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import de.fmk.kicknrush.dto.TeamDTO;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -31,5 +32,17 @@ public class Team {
 
 	public Team(int teamId) {
 		this.teamId = teamId;
+	}
+
+
+	public TeamDTO toDTO() {
+		final TeamDTO dto = new TeamDTO();
+
+		dto.setTeamId(teamId);
+		dto.setTeamIconUrl(teamIconUrl);
+		dto.setTeamIconUrlSmall(teamIconUrlSmall);
+		dto.setTeamName(teamName);
+
+		return dto;
 	}
 }

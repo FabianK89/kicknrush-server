@@ -97,6 +97,11 @@ public class DatabaseHandler {
 	}
 
 
+	public List<Group> getGroups() {
+		return groupHandler.getValues(jdbcTemplate);
+	}
+
+
 	public boolean isAdminSession(final UUID sessionID) {
 		final Session session;
 		final User    user;
