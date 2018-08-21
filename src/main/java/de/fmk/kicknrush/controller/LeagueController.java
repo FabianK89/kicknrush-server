@@ -10,6 +10,7 @@ import de.fmk.kicknrush.models.Group;
 import de.fmk.kicknrush.models.Match;
 import de.fmk.kicknrush.models.Team;
 import de.fmk.kicknrush.service.OpenLigaDBService;
+import de.fmk.kicknrush.utils.ImageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,13 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,39 +54,22 @@ public class LeagueController {
 		List<Team> teams = oldbService.getTeams();
 
 		teams.forEach(team -> {
+			final String url = team.getTeamIconUrl();
 
-			team.setTeamIconUrlSmall(team.getTeamIconUrl());
+			if (url != null) {
+				try {
+					ImageUtils.storeTeamLogo(url, team.getTeamName(), false).ifPresent(team::setTeamIconUrl);
+					ImageUtils.storeTeamLogo(url, team.getTeamName(), true).ifPresent(team::setTeamIconUrlSmall);
+				}
+				catch (IOException ioex) {
+					LOGGER.error("Could not store the logo for the team {}.", team.getTeamName(), ioex);
+				}
+			}
+
 			dbHandler.addTeam(team);
 		});
 
 		return !teams.isEmpty();
-	}
-
-
-	public void storeImage(final String url) {
-		final URLConnection connection;
-
-		byte[] buf;
-		int    len;
-
-		buf = new byte[1024];
-
-		if (url == null)
-			return;
-
-		try {
-			connection = new URL(url).openConnection();
-
-			try (InputStream  is = connection.getInputStream();
-			     OutputStream os = new FileOutputStream(new File(""))) {
-
-				while ((len = is.read(buf)) > 0)
-					os.write(buf, 0, len);
-			}
-		}
-		catch (IOException ioex) {
-			LOGGER.error("Could not load the image from {}.", url, ioex);
-		}
 	}
 
 
