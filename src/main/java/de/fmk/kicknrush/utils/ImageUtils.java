@@ -89,7 +89,7 @@ public class ImageUtils {
 		if (rootDir == null || url == null || team == null)
 			return Optional.empty();
 
-		fileName = createFileName(team, url.substring(url.lastIndexOf(".")), small);
+		fileName = createFileName(team, url.substring(url.lastIndexOf('.')), small);
 		path     = Paths.get(rootDir, ".kicknrush", "images");
 
 		if (!Files.isDirectory(path))

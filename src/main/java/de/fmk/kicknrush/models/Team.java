@@ -41,6 +41,8 @@ public class Team {
 
 		dto.setTeamId(teamId);
 		dto.setTeamName(teamName);
+		dto.setTeamIconType(teamIconUrl.substring(teamIconUrl.lastIndexOf('.')));
+		dto.setTeamIconSmallType(teamIconUrlSmall.substring(teamIconUrlSmall.lastIndexOf('.')));
 
 		ImageUtils.encodeBase64(teamIconUrl).ifPresent(dto::setTeamIcon);
 		ImageUtils.encodeBase64(teamIconUrlSmall).ifPresent(dto::setTeamIconSmall);
