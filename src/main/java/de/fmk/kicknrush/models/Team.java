@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import de.fmk.kicknrush.dto.TeamDTO;
+import de.fmk.kicknrush.utils.ImageUtils;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -39,9 +40,10 @@ public class Team {
 		final TeamDTO dto = new TeamDTO();
 
 		dto.setTeamId(teamId);
-		dto.setTeamIconUrl(teamIconUrl);
-		dto.setTeamIconUrlSmall(teamIconUrlSmall);
 		dto.setTeamName(teamName);
+
+		ImageUtils.encodeBase64(teamIconUrl).ifPresent(dto::setTeamIcon);
+		ImageUtils.encodeBase64(teamIconUrlSmall).ifPresent(dto::setTeamIconSmall);
 
 		return dto;
 	}

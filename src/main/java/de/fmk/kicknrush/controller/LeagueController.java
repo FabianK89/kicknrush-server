@@ -51,15 +51,19 @@ public class LeagueController {
 
 	@RequestMapping("/loadTeams")
 	public boolean loadTeams() {
-		List<Team> teams = oldbService.getTeams();
+		final List<Team> teams;
+		final String     homeDir;
+
+		teams   = oldbService.getTeams();
+		homeDir = System.getProperty("user.home");
 
 		teams.forEach(team -> {
 			final String url = team.getTeamIconUrl();
 
 			if (url != null) {
 				try {
-					ImageUtils.storeTeamLogo(url, team.getTeamName(), false).ifPresent(team::setTeamIconUrl);
-					ImageUtils.storeTeamLogo(url, team.getTeamName(), true).ifPresent(team::setTeamIconUrlSmall);
+					ImageUtils.storeTeamLogo(homeDir, url, team.getTeamName(), false).ifPresent(team::setTeamIconUrl);
+					ImageUtils.storeTeamLogo(homeDir, url, team.getTeamName(), true).ifPresent(team::setTeamIconUrlSmall);
 				}
 				catch (IOException ioex) {
 					LOGGER.error("Could not store the logo for the team {}.", team.getTeamName(), ioex);
